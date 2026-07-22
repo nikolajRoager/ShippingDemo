@@ -155,7 +155,7 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
     int landMapHeight;
     {
         fs::path path = assetsPath()/"levels"/levelName/"landmap.png";
-        SDL_Surface* loaded = IMG_Load(path.c_str());
+        SDL_Surface* loaded = IMG_Load((path.string()).c_str());
         if (!loaded) {
             throw std::runtime_error(std::string("IMG_Load failed to load landmap.png: ") + IMG_GetError());
         }
