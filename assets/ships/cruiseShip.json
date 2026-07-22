@@ -1,0 +1,9 @@
+{
+  "className": "Cruise Ship",
+  "health": 35,
+  "maxSpeed":8.231111,
+  "cruiseSpeed": 7.716667,
+  "length": 98,
+  "mass": 1226,
+  "civilian": true
+}

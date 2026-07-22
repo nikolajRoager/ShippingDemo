@@ -1,0 +1,12 @@
+{
+  "className": "Steregushchiy class",
+  "health": 40,
+  "maxSpeed": 13.89,
+  "cruiseSpeed":  7.202222,
+  "length": 104.5,
+  "mass": 2200000,
+  "AShM": 4,
+  "SAM": 12,
+  "gun": 1,
+  "CIWS": 2
+}

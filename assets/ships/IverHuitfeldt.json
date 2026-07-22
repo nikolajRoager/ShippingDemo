@@ -1,0 +1,12 @@
+{
+  "className": "Iver Huitfeldt",
+  "health": 65,
+  "maxSpeed": 14.40444,
+  "cruiseSpeed": 9.26,
+  "length": 138.7,
+  "mass": 6645000,
+  "AShM": 24,
+  "SAM": 68,
+  "gun": 2,
+  "CIWS": 1
+}

@@ -1,0 +1,12 @@
+{
+  "className": "Udaloy Class",
+  "health": 80,
+  "maxSpeed": 14.40444,
+  "cruiseSpeed":  7.202222,
+  "length": 163,
+  "mass": 7570000,
+  "AShM": 8,
+  "SAM": 64,
+  "gun": 2,
+  "CIWS": 4
+}

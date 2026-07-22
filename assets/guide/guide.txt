@@ -1,0 +1,54 @@
+World map controls
+
+This guide is also available as a PDF document, in the same folder as the game executable.
+
+You can always open the guide by pressing the ? button in the top left
+
+Press and hold the left-mouse button to drag the map around, use the mouse-wheel to zoom in and out. Press the HOME button on your keyboard to focus the camera on your ships
+
+Your ships, and enemy ships, are displayed as actual images of ships when you zoom in on them, and with a NATO Icon, the NATO icon for your ship is a blue circle, the enemies are a red square rotated 45 degrees, Unknown ships are yellow flower symbols, and civilian ships are green squares.
+
+Inside the friendly ship symbol, there is: a green line indicating the direction the ship is moving in and a red arrow indicating the direction the ship is commanded to go
+
+Feel free to close this guide, Have a look around, when you are ready come back and go to the next page about ship controls
+NEWPAGE
+Ship controls
+
+Your ships automatically move in a loose formation centered on the flag-ship. If the flagship sinks, another ship becomes flag-ship
+The formation sails towards the waypoints (green crosses), RIGHT CLICK to clear all waypoints and place a new one, SHIFT+RIGHT CLICK to add multiple waypoints.
+The slowest ship dictates the speed. When the final waypoint is reched, the formation stops.
+
+In the bar at the top of the screen, you can see your speed indicator drop-down menu, if you click the drop-down bottom you can select your commanded speed between "stop","slow", "cruise" and "full" (By the way "flank"-speed is a purely American term, and you are playing as a European ship).
+You can also press the "q" amd "w" to decrease/increase commanded speed.
+Your flag-ships current speed, in knots, is written on next to your commanded speed. Remember that ships are very heavy and take quite a while to turn or change speed.
+
+You can use "time-warp" to speed up (or pause, or unpause) the simulation; there are 6 different time-warp settings (x0 (pause), x1 (real-time) ,x5 , x10, x50, and x100 ), press the number keys 1,2,3,4,5,6 on your keyboard to switch between them, press comma "," to reduce time-warp, period "." to increase it, space or 1 to pause, enter or 6 to go to the fastest warp. You can see the current time-warp in the bottom-left of your screen
+The game will automatically reduce time-warp if your computer can't run that fast. (That may happen if a lot of missiles are in the air)
+Let me say right away, if your computer can't run at least 50x timewarp, you should SKIP THIS GAME!
+
+Feel free to close this guide and try sailing around a bit, when you are ready come back and go to the next page about Radar, detection, and how to board ships
+Oh, and try not to sail aground, that will destroy your ship.
+NEWPAGE
+Spotting the enemy
+
+Before you can fight the enemy, you need to SPOT them and IDENTIFY them
+WARNING, there are CIVILIAN ships in some missions! If you attack a civilian ship, you LOOSE!
+
+Ships which are spotted but not identified are marked with a yellow flower.
+Identified enemy ships are marked with a red square rotated 45 degrees, Identified civilian ships are marked with a green square
+Missiles and drones get marked with the top-half of the ship-marker, around either a M or D
+
+When a ship has been spotted but not identified, our land-based intelligence will work on identifying the ships, it may take up to half an hour in-game time (use time-warp), but eventually the ship will be identified.
+
+In this game, you have 4 tools for spotting ships, missiles, or drones: transponder, Vision, Radar, ESM, and Drones.
+
+0. Some civilian ships have their transponder turned on, they are always spotted and identified.
+1. Vision: The small YELLOW dashed circle around your ships with an 8 nautical mile radius is your visual range, ALL ships inside this gets instantly SPOTTED and IDENTIFIED.
+2. Radar: Press R to toggle your flag-ships radar ON and OFF (it starts off), when on, a green dashed circle indicates your 100 nautical miles radar range, ships in range get SPOTTED but not IDENTIFIED.
+3. ESM (Electronic Support Measured): your ships automatically detect when the enemy turns on their radar, enemy radar can instantly be SPOTTED and IDENTIFIED at 2 times the range of their radar (so basically the entire map)
+4. Drones: each of your ships has 1 recon drone, which you can launch in the direction of your mouse by pressing D. Recon drones fly until they are out of fuel (at 40 nautical miles) or reach the destination, then they return to the ship. Drones can do visual spotting, and has a radar with 30 nmi range.
+
+BEWARE, the enemy has ESM too: if you turn on your radar, they will both spot and identify you. It is often safer to use drones for recon, and only turn on your radar when you know you have already been spotted!
+You may want to read the next page on defending yourself against enemy missiles before turning on your radar.
+NEWPAGE
+What air defence doing?!

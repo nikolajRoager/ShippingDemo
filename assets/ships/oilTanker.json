@@ -1,0 +1,9 @@
+{
+  "className": "Oil Tanker",
+  "health": 60,
+  "maxSpeed": 8.488333,
+  "cruiseSpeed": 7.202222,
+  "length": 330,
+  "mass": 6e+8,
+  "civilian": true
+}

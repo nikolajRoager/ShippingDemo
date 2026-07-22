@@ -1,0 +1,9 @@
+{
+  "className": "Fishing Trawler",
+  "health": 10,
+  "maxSpeed":5.144444,
+  "cruiseSpeed": 3.601111,
+  "length": 70,
+  "mass": 800,
+  "civilian": true
+}

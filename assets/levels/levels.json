@@ -1,0 +1,38 @@
+[
+  {
+    "name": "tutorial",
+    "displayName": "First price",
+    "description": "It is November in the year 2022, Denmark has agreed to hand over all their 5 frigates to Ukraine as part of a lend-lease scheme.\nYou are the admiral of the newly established Ukrainian Atlantic Navy, your mission is to raid Russian \"Shadow fleet\" merchant ships smuggling oil.\nA Russian oil-tanker, escorted by a single Stereguschiy class Corvette, has been spotted in the North Atlantic, near Jan Mayern Island, your mission is to sink the warship, then board and capture the oil-tanker!",
+    "nextLevel": "level0"
+  },
+  {
+    "name": "level0",
+    "displayName": "Frigate duel",
+    "description": "February 2023 a lone Russian frigate, Admiral Gorshkov, has been spotted escorting two Russian oil tankers in the mid-atlantic.\nYour mission is to attack the convoy and sink the Russian warship, this will be our first true naval battle!",
+    "nextLevel": "level1"
+  },
+  {
+    "name": "level1",
+    "displayName": "Cossacks of the high seas",
+    "description": "December 2023, Putin is very angry, the entire russian Northern fleet has been dispatched to sink us, the Northern fleet is moving in two surface action groups, and a French satellite has spotted one of the groups in the Norwegian sea\nThe group consists of two Admiral Gorshkov class Frigates, and 3 Grisha class Corvettes\nThis will be a big battle\nBetter hope we can finish them off before the much more powerful second group arrives...",
+    "nextLevel": "level2"
+  },
+  {
+    "name": "level2",
+    "displayName": "Last stand of Admiral Kulakov",
+    "nextLevel": "level3",
+    "description": "January 2024, two Udaloy class Destroyers, the Admiral Kulakov and Admiral Kasatonov, are escorting three Russian oil-tankers in the English channel\nPutin would never expect us to attack such a powerful force, so let us do it.\nBe warned though, the Udaloy class is much more powerful than our ships, we need to outnumber them"
+  },
+  {
+    "name": "level3",
+    "displayName": "Raid on Murmansk",
+    "nextLevel": "level4",
+    "description": "September 2024, Putin would never expect us to attack a Russian port directly, and that is exactly why we will do it.\nThe Russian ships will be at anchor and unable to move or fight back... at least for a little while.\nTry to sink the Admiral Kuznetzov Aircraft carrier, which is currently undergoing repairs and unable to move or fight"
+  },
+  {
+    "name": "level4",
+    "displayName": "Russian warship go fuck yourself",
+    "description": "February 2025, the Kirov class battlecruiser Admiral Nakhimov - Russia's most powerful warship by far - has just finished a very expensive upgrade, and is currently undergoing sea-trials in the Barrents sea.\nSince she is undergoing trials, Admiral Nakhimov is not armed and can not fight back... but she is escorted by by two Udaloy class destroyers which very much can fight\nThis is the best chance we will ever get of sinking this mighty ship\nAnd don't forget: Russian Warship go fuck yourself",
+    "nextLevel": "null"
+  }
+]

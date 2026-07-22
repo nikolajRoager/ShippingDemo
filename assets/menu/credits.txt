@@ -1,0 +1,57 @@
+Whirlwinds of Danger
+Developed by Nikolaj Roager Christensen
+
+Special thanks to Kevin Macleod: For the music used in game
+
+Special thanks to the people who developed the open source software and assets used in this game:
+(Note that these people are not associated directly with this game, and do not necessarily endorse it)
+
+The Braille Institute, for the Atkinson hyperlegible font
+
+G-Truc: for the GLM C++ math library
+
+Sam Lantinga: for the SDL2, SDL2_image, SDL2_ttf, and SDL2_mixer C++ libraries
+
+Niels Lohmann: Author of nlohmann/json library
+
+Bjørn Høhrmann: Contributed to nlohmann/json
+
+Florian Loitsch: Contributed to nlohmann/json
+
+Evan Nemerson: Contributed to nlohmann/json
+
+Extra special thanks to Bjarne Stroustrup, and The Standard C++ Foundation: For the C++ programming language itself
+
+And thanks to following freesound.org users who contributed sound effects:
+
+JensZygar
+LG
+ryusa
+thecoolcookie17
+Aurelon
+7778
+Flem0527
+marb7e
+GeorgeDiamond
+Coghezzi
+ellbellekc
+volivieri
+ldezem
+
+Thanks to the people who released the pictures used in this game into public domain
+
+An unknown Russian sailor
+Another unknown Russian sailor
+An unknown Soviet Sailor
+Martin E. Maddock, US Navy
+Joshua L. Leonard, US Navy
+An unknown American sailor
+Martin Lie
+
+Please read the file LICENSES_AND_CREDITS.txt for full legal details.
+
+Do note that not every asset listed in these credits or LICENSES_AND_CREDITS.txt may have been used in game.
+Some things which were cut, but still exist in the files.
+These things are still included with the game, and are thus still credited
+
+Thank you for reading the credits

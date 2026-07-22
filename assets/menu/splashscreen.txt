@@ -1,0 +1,6 @@
+This game is meant to be played on a 1920 by 1080 screen.
+If your screen is less than 1920 by 1080 you may experience graphical glitches
+
+If you are playing on Windows 10 or 11 and get graphical glitches (like menus/UI falling outside the screen), try setting display scaling to 100% in the display settings instead of the default 125%, it usually helps.
+
+Press enter to start

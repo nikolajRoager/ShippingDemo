@@ -1,0 +1,19 @@
+Welcome to the tutorial, in this mission you will learn how to control your ships, how radars work, how to fight, and how to capture ships
+
+There is a Russian oil-tanker escorted by a single Steregushchiy class Corvette somewhere to the North East, on the opposite side of Jan Mayern Island relative to you.
+Corvettes are smaller and less powerful than your frigates, and you have 5 frigates, so this should be an easy first fight. But be careful, the Steregushciy still has 4 Anti-ship missiles, and if it detects you, you will come under attack!.
+The mission ends when you have sunk the Corvette, and captured or sunk the oil-tanker, to capture the tanker you need to sink all warships, and get within 20 nautical miles of it, then it will simply surrender and stop moving.
+
+But first, you need to learn how to play the game, to do that, either click the ? button in the top-left to open the guide, or go to YouTube and search for "ATypicalProgrammer Whirlwinds of Danger tutorial"
+
+Press the ! button in the top-left of the screen to bring up the mission briefing again. Close this window by pressing the x in the top-right of this message.
+
+Win condition:
+* Sink the Russian Corvette
+* Capture or sink the Russian oil-tanker
+
+Loose conditions:
+* All Ukrainian ships sunk
+* All Ukrainian ships left the map
+* The Russian ships left the map
+* Ukraine sunk a Civilian ship (THERE ARE CIVILIANS IN THIS MISSION!)
