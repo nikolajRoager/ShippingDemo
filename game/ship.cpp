@@ -8,9 +8,13 @@
 #include <iostream>
 #include <utility>
 
-Ship::Ship(const std::string &className, Side side, int health, double maxSpeed,double cruiseSpeed, double mass, double length, glm::dvec2 position, double heading, std::shared_ptr<const TexWrap> texture,std::shared_ptr<const TexWrap> markerTexture,std::shared_ptr<const TexWrap> targetTexture,std::shared_ptr<const TexWrap> velocityTexture,SDL_Renderer *renderer,TTF_Font* smallFont):
+Ship::Ship(const std::string &className,Side side,NATOSymbolManager::ShipType type, const std::vector<Gun>& guns, int health,double maxSpeed,double cruiseSpeed,double mass, double length, double height,glm::dvec2 position, double heading,bool transponder,double radarCoefficient,std::shared_ptr<const TexWrap> texture,std::shared_ptr<const TexWrap> cardTexture,std::shared_ptr<const TexWrap> targetTexture,std::shared_ptr<const TexWrap> velocityTexture,SDL_Renderer *renderer,TTF_Font* smallFont):
 currentState_(position,heading,glm::dvec2(cos(heading)*cruiseSpeed,sin(heading)*cruiseSpeed),0)
     {
+    guns_ = guns;
+    radarCoefficient_=radarCoefficient;
+    type_=type;
+    transponderOn_ = transponder;
     className_ = className;
     side_ = side;
     health_ = health;
@@ -19,11 +23,16 @@ currentState_(position,heading,glm::dvec2(cos(heading)*cruiseSpeed,sin(heading)*
     cruiseSpeed_ = cruiseSpeed;
     mass_ = mass;
     length_ = length;
+    height_ = height;
+    sqrtHeight_=std::sqrt(height);
+    double crossSection = length_*height_;
+    radarCrossSectionFourthRoot_ = std::sqrt(std::sqrt(crossSection));
     desiredHeading_= heading;
+
     texture_ = std::move(texture);
+    cardTexture_ = std::move(cardTexture);
     targetTexture_ = std::move(targetTexture);
     velocityTexture_ = std::move(velocityTexture);
-    markerTexture_ = std::move(markerTexture);
 
     nameTexture_=std::make_shared<TexWrap>(className,renderer,smallFont);
 
@@ -43,6 +52,8 @@ currentState_(position,heading,glm::dvec2(cos(heading)*cruiseSpeed,sin(heading)*
     //Higher rudder damping makes the ship more sluggish, but also dampens oscillations making for a smoother ride
     rudderDamping_ = 50*std::sqrt(rudderAuthority_);
 
+    identified_ = false;
+
     //Max speed is achieved when max thrust is equal to drag.
     maxThrust_=frontalFrictionC_*maxSpeed_*maxSpeed_;
     cruiseThrust_=frontalFrictionC_*cruiseSpeed_*cruiseSpeed_;
@@ -59,6 +70,8 @@ static double wrapAngle(double a) {
 
 
 void Ship::render(SDL_Renderer *renderer, double mapTopLeftX, double mapTopLeftY, double scale) const {
+    if (!identified_)
+        return;
     int screenX =static_cast<int>(currentState_.position_.x*scale+mapTopLeftX);
     int screenY =static_cast<int>(currentState_.position_.y*scale+mapTopLeftY);
 
@@ -67,13 +80,12 @@ void Ship::render(SDL_Renderer *renderer, double mapTopLeftX, double mapTopLeftY
 
     texture_->render(screenX,screenY,renderer,scale,true,true,false,1,0,screenAngle);
 
-
-    markerTexture_->render(screenX,screenY,renderer,1.0,true,true);
-    double velocityDirection = std::atan2(currentState_.velocity_.y,currentState_.velocity_.x);
-    double velocityScreenAngle = M_PI*0.5+velocityDirection;
-    velocityTexture_->render(screenX,screenY,renderer,1.0,true,true,false,1,0,velocityScreenAngle);
-    targetTexture_->render(screenX,screenY,renderer,1.0,true,true,false,1,0,targetScreenAngle);
-
+    if (side_==FRIEND) {
+        double velocityDirection = std::atan2(currentState_.velocity_.y,currentState_.velocity_.x);
+        double velocityScreenAngle = M_PI*0.5+velocityDirection;
+        velocityTexture_->render(screenX,screenY,renderer,1.0,true,true,false,1,0,velocityScreenAngle);
+        targetTexture_->render(screenX,screenY,renderer,1.0,true,true,false,1,0,targetScreenAngle);
+    }
 
 }
 
@@ -104,6 +116,8 @@ static Ship::ShipState weightedRK4Sum(
 
 
 void Ship::update(double dt) {
+    //DOES NOT NEED TO CHECK SHIP HEALTH, even sunk ships can move
+
     //Calculate number of substeps to use
     const double maxSubStep = 0.05; // smaller = safer but more CPU
     int steps = std::max(1, (int)std::ceil(dt / maxSubStep));
@@ -183,6 +197,10 @@ void Ship::sailTowards(glm::dvec2 point) {
 }
 
 void Ship::setSpeed(Speed newSpeed) {
+    if (health_<=0) {
+        currentThrust_=0;
+        return;
+    }
     switch (newSpeed) {
         default:
         case STOP:

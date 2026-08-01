@@ -3,21 +3,17 @@
 //
 
 #include "game.h"
-#include "game.h"
-#include "game.h"
 
 #include <fstream>
 #include <SDL2/SDL_image.h>
 
 #include "../getAssets.h"
 #include "../MIGUI/emptyControl.h"
-#include "../MIGUI/mouseOverControl.h"
 #include "../MIGUI/stackControl.h"
 #include "../MIGUI/tableControl.h"
 #include "../MIGUI/textureControl.h"
 #include "../nlohmann/json.hpp"
 
-#define FORMATION_DISTANCE 2000.0
 #define MS_TO_KN 1.943844
 
 
@@ -40,12 +36,8 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
     std::vector<fs::path> textureRequests
     {
         fs::path("levels")/levelName/"map.png",
-        fs::path("DetectionSymbols")/"friendlyShip.png",
-        fs::path("DetectionSymbols")/"enemyShip.png",
-        fs::path("DetectionSymbols")/"unknownShip.png",
-        fs::path("DetectionSymbols")/"neutralShip.png",
-        fs::path("DetectionSymbols")/"targetIndicator.png",
-        fs::path("DetectionSymbols")/"velocityIndicator.png",
+        fs::path("NATOSymbols")/"targetIndicator.png",
+        fs::path("NATOSymbols")/"velocityIndicator.png",
         fs::path("menu")/"plus.png",
         fs::path("menu")/"minus.png",
         fs::path("menu")/"expand.png",
@@ -54,6 +46,8 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
         fs::path("particles")/"foam.png",
     };
 
+    NATOSymbolManager::requestTextures(textureRequests);
+
     std::ifstream levelDataFile(assetsPath()/"levels"/levelName/"data.json");
     if (!levelDataFile.is_open()) {
         throw std::runtime_error("Could open data.json for level "+levelName);
@@ -61,7 +55,6 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
     nlohmann::json levelDataJson;
     levelDataFile >> levelDataJson;
     levelDataFile.close();
-
 
     std::ifstream playerDataFile(assetsPath()/"levels"/levelName/"playerForces.json");
     if (!playerDataFile.is_open()) {
@@ -77,6 +70,7 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
     for (const auto &shipJson : playerDataJson) {
         std::string name = shipJson["name"].get<std::string>();
         textureRequests.emplace_back(fs::path("ships")/(name+".png"));
+        textureRequests.emplace_back(fs::path("ships")/(name+"_card.png"));
         ++nShips;
     }
     //Also make a pass through enemy and civilian ships to load their textures
@@ -92,13 +86,13 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
             textureRequests.emplace_back(fs::path("ships")/(name+".png"));
         }
     }
+    textureRequests.emplace_back(fs::path("ships")/("fallback_card.png"));
 
     ThreadPool loadingPool(std::thread::hardware_concurrency());
     //We can do other stuff while our textures are loading in the background
     textureManager_.launchTextureLoading(textureRequests, assetsPath(),loadingPool);
 
     clickSound_=std::make_shared<SoundWrap>(assetsPath()/"sounds"/"click.mp3");
-    gongSound_=std::make_shared<SoundWrap>(assetsPath()/"sounds"/"gong.mp3");
     explosionSound_=std::make_shared<SoundWrap>(assetsPath()/"sounds"/"explosion.wav");
 
     //Read mission briefing
@@ -136,6 +130,8 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
     double playerForceX = levelDataJson["playerSpawn"][0].get<double>();
     double playerForceY = levelDataJson["playerSpawn"][1].get<double>();
     chunkSize = levelDataJson["chunkSize"].get<int>();
+    isDay_ = levelDataJson["day"].get<bool>();
+    isRain_ = levelDataJson["rain"].get<bool>();
     std::deque<glm::dvec2> playerWaypoints;
     for (const auto& waypoints : levelDataJson["playerWaypoints"]) {
         playerWaypoints.emplace_back(waypoints[0].get<double>(),waypoints[1].get<double>());
@@ -241,6 +237,43 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
             explosionTemplate_.scale_=explosionJson["scale"].get<double>();
     }
 
+    //Coefficient C in the equation radarHorizon = C*(sqrt(own height)+sqrt(target height)), which is a reasonable approximation for radar horizon distance
+    double radarHorizonCoefficient = 3500.0;
+    //What fraction of radar horizon range can we see in clear weather day
+    double clearDayVisionFraction=0.75;
+    //What fraction of radar horizon range can we see in clear weather at night
+    double clearNightVisionFraction=0.5;
+    //What fraction of radar horizon range can we see in rainy weather at day
+    double rainyDayVisionFraction=0.5;
+    //What fraction of radar horizon range can we see in rainy weather at night
+    double rainyNightVisionFraction=0.25;
+    //What height target object is used as a reference for the displayed radar horizon range
+    double referenceRadarHorizonHeight=30;
+    //What is the 4th root of the reference radar cross section we will use to display radar range
+    double referenceSqrtSqrtRadarCrossSection=0.4;
+
+    double formationDistance=2000.0;
+
+    ///How much further can ESM see than the radar can see
+    double ESMRangeFactor;
+    {
+        std::ifstream statsFile(assetsPath()/"stats.json");
+        if (!statsFile.is_open()) {
+            throw std::runtime_error("Could open stats.json");
+        }
+        nlohmann::json statsJson;
+        statsFile >> statsJson;
+        statsFile.close();
+        formationDistance=statsJson["formationDistance"].get<double>();
+        radarHorizonCoefficient=statsJson["radarHorizonCoefficient"].get<double>();
+        clearDayVisionFraction=statsJson["clearDayWeatherVisionFraction"].get<double>();
+        clearNightVisionFraction=statsJson["clearNightVisionFraction"].get<double>();
+        rainyDayVisionFraction=statsJson["rainyDayVisionFraction"].get<double>();
+        rainyNightVisionFraction=statsJson["rainyNightVisionFraction"].get<double>();
+        referenceRadarHorizonHeight=statsJson["referenceRadarHorizonHeight"].get<double>();
+        referenceSqrtSqrtRadarCrossSection=statsJson["sqrtSqrtAShMCrossSection"].get<double>();
+        ESMRangeFactor=statsJson["ESMRangeFactor"].get<double>();
+    }
 
 
     //Now lets wait for the texture loading to finish and display a loading bar
@@ -296,12 +329,17 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
 
     //Now we can initialize the ships
     //Start with friendly ships
+
+    std::vector<std::shared_ptr<Formation>> playerFormations;
+    std::vector<std::shared_ptr<Formation>> enemyFormations;
+    std::vector<std::shared_ptr<Formation>> civilianFormations;
+
     int shipI=0;
     double shipAngle = nShips>1 ? 2.0*M_PI/(nShips-1.0) : 0;
     for (const auto &shipJson : playerDataJson) {
     glm::dvec2 shipPosition=glm::dvec2(playerForceX,playerForceY);
         if (shipI>0) {
-            shipPosition+=glm::dvec2(cos(shipI*(shipAngle)),sin(shipI*(shipAngle)))*FORMATION_DISTANCE*0.8;
+            shipPosition+=glm::dvec2(cos(shipI*(shipAngle)),sin(shipI*(shipAngle)))*formationDistance*0.8;
         }
         glm::dvec2 direction = playerWaypoints[0]-shipPosition;
         double heading = atan2(direction.y, direction.x);
@@ -315,15 +353,50 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
         shipFile >> shipDataJson;
         shipFile.close();
 
-        playerShips_.emplace_back(std::make_shared<Ship>(shipDataJson["className"].get<std::string>(),Ship::FRIEND,shipDataJson["health"].get<double>(),shipDataJson["maxSpeed"].get<double>(),shipDataJson["cruiseSpeed"].get<double>(),shipDataJson["mass"].get<double>(),shipDataJson["length"].get<double>(),shipPosition,heading,textureManager_.getTexWrap(fs::path("ships")/(name+".png")),
-        textureManager_.getTexWrap(fs::path("DetectionSymbols")/"friendlyShip.png"),
-        textureManager_.getTexWrap(fs::path("DetectionSymbols")/"targetIndicator.png"),
-        textureManager_.getTexWrap(fs::path("DetectionSymbols")/"velocityIndicator.png"),
+        bool transponderOn = shipDataJson.contains("transponder") && shipDataJson["transponder"].get<bool>();
+        double radarCoefficient = shipDataJson["radarCoefficient"].get<double>();
+        std::string typeStr = shipDataJson["type"].get<std::string>();
+        NATOSymbolManager::ShipType shipType=NATOSymbolManager::CONTAINER_SHIP;
+        if (typeStr=="Container Ship")
+            shipType = NATOSymbolManager::CONTAINER_SHIP;
+        else if (typeStr=="Oil Tanker")
+            shipType = NATOSymbolManager::OIL_TANKER;
+        else if (typeStr=="Fisher")
+            shipType = NATOSymbolManager::FISHER;
+        else if (typeStr=="Passenger Ship")
+            shipType = NATOSymbolManager::PASSENGER_SHIP;
+        else if (typeStr=="Corvette")
+            shipType = NATOSymbolManager::CORVETTE;
+        else if (typeStr=="Frigate")
+            shipType = NATOSymbolManager::FRIGATE;
+        else if (typeStr=="Destroyer")
+            shipType = NATOSymbolManager::DESTROYER;
+        else if (typeStr=="Cruiser")
+            shipType = NATOSymbolManager::CRUISER;
+        else if (typeStr=="Carrier")
+            shipType = NATOSymbolManager::CARRIER;
+        else
+            throw std::runtime_error("Unknown ship type: " + typeStr);
+
+        std::vector<Ship::Gun> guns;
+
+        if (shipDataJson.contains("guns")) {
+            for (const auto gunJson : shipDataJson["guns"]) {
+                guns.emplace_back(gunJson["location"].get<double>(),gunJson["omega"].get<double>(),gunJson["restAngle"].get<double>(),gunJson["reloadTime"].get<double>(),gunJson["seaRange"].get<double>(),gunJson["airRange"].get<double>(),gunJson["muzzleVelocity"].get<double>());
+            }
+        }
+
+        playerShips_.emplace_back(std::make_shared<Ship>(shipDataJson["className"].get<std::string>(),Ship::FRIEND,shipType,guns,shipDataJson["health"].get<double>(),shipDataJson["maxSpeed"].get<double>(),shipDataJson["cruiseSpeed"].get<double>(),shipDataJson["mass"].get<double>(),shipDataJson["length"].get<double>(),shipDataJson["height"].get<double>(),shipPosition,heading,transponderOn,radarCoefficient ,
+        textureManager_.getTexWrap(fs::path("ships")/(name+".png")),
+        textureManager_.getTexWrap(fs::path("ships")/(name+"_card.png")),
+        textureManager_.getTexWrap(fs::path("NATOSymbols")/"targetIndicator.png"),
+        textureManager_.getTexWrap(fs::path("NATOSymbols")/"velocityIndicator.png"),
         renderer,smallFont
         ));
         ++shipI;
     }
-    playerFormation_=std::make_unique<LooseFormation>(FORMATION_DISTANCE,playerShips_,playerWaypoints);
+    playerFormations.push_back(std::make_unique<Formation>(formationDistance,playerShips_,playerWaypoints,false));
+    selectedFormationId_=0;
     //Now hostile ships
     missionCounter.emplace("total",enemyShipCounter());
     for (const auto &formationJson : levelDataJson["enemyFormations"]) {
@@ -338,6 +411,7 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
 
         shipI=0;
         nShips = formationJson["ships"].size();
+        bool radarOn = formationJson["radarOn"].get<bool>();
         shipAngle = nShips>1 ? 2.0*M_PI/(nShips-1.0) : 0;
         glm::dvec2 formationPosition = glm::dvec2(formationJson["spawn"][0].get<double>(),formationJson["spawn"][1].get<double>());
 
@@ -345,7 +419,7 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
         for (const auto &shipJson : formationJson["ships"]) {
             glm::dvec2 shipPosition=formationPosition;
             if (shipI>0) {
-                shipPosition+=glm::dvec2(cos(shipI*(shipAngle)),sin(shipI*(shipAngle)))*FORMATION_DISTANCE*0.8;
+                shipPosition+=glm::dvec2(cos(shipI*(shipAngle)),sin(shipI*(shipAngle)))*formationDistance*0.8;
             }
             glm::dvec2 direction = enemyWaypoints[0]-shipPosition;
             double heading = atan2(direction.y, direction.x);
@@ -359,10 +433,45 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
             shipFile >> shipDataJson;
             shipFile.close();
 
-            auto shipPtr = std::make_shared<Ship>(shipDataJson["className"].get<std::string>(),Ship::FRIEND,shipDataJson["health"].get<double>(),shipDataJson["maxSpeed"].get<double>(),shipDataJson["cruiseSpeed"].get<double>(),shipDataJson["mass"].get<double>(),shipDataJson["length"].get<double>(),shipPosition,heading,textureManager_.getTexWrap(fs::path("ships")/(name+".png")),
-            textureManager_.getTexWrap(fs::path("DetectionSymbols")/"enemyShip.png"),
-            textureManager_.getTexWrap(fs::path("DetectionSymbols")/"targetIndicator.png"),
-            textureManager_.getTexWrap(fs::path("DetectionSymbols")/"velocityIndicator.png"),
+            bool transponderOn = shipDataJson.contains("transponder") && shipDataJson["transponder"].get<bool>();
+            double radarCoefficient = shipDataJson["radarCoefficient"].get<double>();
+
+            std::string typeStr = shipDataJson["type"].get<std::string>();
+            NATOSymbolManager::ShipType shipType=NATOSymbolManager::CONTAINER_SHIP;
+            if (typeStr=="Container Ship")
+                shipType = NATOSymbolManager::CONTAINER_SHIP;
+            else if (typeStr=="Oil Tanker")
+                shipType = NATOSymbolManager::OIL_TANKER;
+            else if (typeStr=="Fisher")
+                shipType = NATOSymbolManager::FISHER;
+            else if (typeStr=="Passenger Ship")
+                shipType = NATOSymbolManager::PASSENGER_SHIP;
+            else if (typeStr=="Corvette")
+                shipType = NATOSymbolManager::CORVETTE;
+            else if (typeStr=="Frigate")
+                shipType = NATOSymbolManager::FRIGATE;
+            else if (typeStr=="Destroyer")
+                shipType = NATOSymbolManager::DESTROYER;
+            else if (typeStr=="Cruiser")
+                shipType = NATOSymbolManager::CRUISER;
+            else if (typeStr=="Carrier")
+                shipType = NATOSymbolManager::CARRIER;
+            else
+                throw std::runtime_error("Unknown ship type: " + typeStr);
+
+            std::vector<Ship::Gun> guns;
+
+            if (shipDataJson.contains("guns")) {
+                for (const auto gunJson : shipDataJson["guns"]) {
+                    guns.emplace_back(gunJson["location"].get<double>(),gunJson["omega"].get<double>(),gunJson["restAngle"].get<double>(),gunJson["reloadTime"].get<double>(),gunJson["seaRange"].get<double>(),gunJson["airRange"].get<double>(),gunJson["muzzleVelocity"].get<double>());
+                }
+            }
+
+            auto shipPtr = std::make_shared<Ship>(shipDataJson["className"].get<std::string>(),Ship::FOE,shipType,guns,shipDataJson["health"].get<double>(),shipDataJson["maxSpeed"].get<double>(),shipDataJson["cruiseSpeed"].get<double>(),shipDataJson["mass"].get<double>(),shipDataJson["length"].get<double>(),shipDataJson["height"].get<double>(),shipPosition,heading,transponderOn,radarCoefficient,
+            textureManager_.getTexWrap(fs::path("ships")/(name+".png")),
+            textureManager_.getTexWrap(fs::path("ships")/("fallback_card.png")),
+            textureManager_.getTexWrap(fs::path("NATOSymbols")/"targetIndicator.png"),
+            textureManager_.getTexWrap(fs::path("NATOSymbols")/"velocityIndicator.png"),
             renderer,smallFont
             );
             formationShips.emplace_back(shipPtr);
@@ -375,21 +484,22 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
             }
             missionCounter[name].spawned++;
         }
-        enemyFormations_.emplace_back(std::make_unique<LooseFormation>(FORMATION_DISTANCE,formationShips,enemyWaypoints));
+        enemyFormations.emplace_back(std::make_unique<Formation>(formationDistance,formationShips,enemyWaypoints,radarOn));
     }
     //Finally neutral ships
     for (const auto &formationJson : levelDataJson["civilianFormations"]) {
 
-        std::deque<glm::dvec2> enemyWaypoints;
+        std::deque<glm::dvec2> neutralWaypoints;
         for (const auto& waypoints : formationJson["waypoints"]) {
-            enemyWaypoints.emplace_back(waypoints[0].get<double>(),waypoints[1].get<double>());
+            neutralWaypoints.emplace_back(waypoints[0].get<double>(),waypoints[1].get<double>());
         }
-        if (enemyWaypoints.empty()) {
+        if (neutralWaypoints.empty()) {
             throw std::runtime_error("Formation had no waypoints");
         }
 
         shipI=0;
         nShips = formationJson["ships"].size();
+        bool radarOn = formationJson["radarOn"].get<bool>();
         shipAngle = nShips>1 ? 2.0*M_PI/(nShips-1.0) : 0;
         glm::dvec2 formationPosition = glm::dvec2(formationJson["spawn"][0].get<double>(),formationJson["spawn"][1].get<double>());
 
@@ -397,9 +507,9 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
         for (const auto &shipJson : formationJson["ships"]) {
             glm::dvec2 shipPosition=formationPosition;
             if (shipI>0) {
-                shipPosition+=glm::dvec2(cos(shipI*(shipAngle)),sin(shipI*(shipAngle)))*FORMATION_DISTANCE*0.8;
+                shipPosition+=glm::dvec2(cos(shipI*(shipAngle)),sin(shipI*(shipAngle)))*formationDistance*0.8;
             }
-            glm::dvec2 direction = enemyWaypoints[0]-shipPosition;
+            glm::dvec2 direction = neutralWaypoints[0]-shipPosition;
             double heading = atan2(direction.y, direction.x);
             std::string name = shipJson["name"].get<std::string>();
 
@@ -411,22 +521,110 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
             shipFile >> shipDataJson;
             shipFile.close();
 
+            bool transponderOn = shipJson.contains("transponder") && shipJson["transponder"].get<bool>();
+            double radarCoefficient = shipDataJson["radarCoefficient"].get<double>();
 
-            std::cout<<"Add "<<shipDataJson["className"].get<std::string>()<<std::endl;
+            std::string typeStr = shipDataJson["type"].get<std::string>();
+            NATOSymbolManager::ShipType shipType=NATOSymbolManager::CONTAINER_SHIP;
+            if (typeStr=="Container Ship")
+                shipType = NATOSymbolManager::CONTAINER_SHIP;
+            else if (typeStr=="Oil Tanker")
+                shipType = NATOSymbolManager::OIL_TANKER;
+            else if (typeStr=="Fisher")
+                shipType = NATOSymbolManager::FISHER;
+            else if (typeStr=="Passenger Ship")
+                shipType = NATOSymbolManager::PASSENGER_SHIP;
+            else if (typeStr=="Corvette")
+                shipType = NATOSymbolManager::CORVETTE;
+            else if (typeStr=="Frigate")
+                shipType = NATOSymbolManager::FRIGATE;
+            else if (typeStr=="Destroyer")
+                shipType = NATOSymbolManager::DESTROYER;
+            else if (typeStr=="Cruiser")
+                shipType = NATOSymbolManager::CRUISER;
+            else if (typeStr=="Carrier")
+                shipType = NATOSymbolManager::CARRIER;
+            else
+                throw std::runtime_error("Unknown ship type: " + typeStr);
 
-            auto shipPtr = std::make_shared<Ship>(shipDataJson["className"].get<std::string>(),Ship::FRIEND,shipDataJson["health"].get<double>(),shipDataJson["maxSpeed"].get<double>(),shipDataJson["cruiseSpeed"].get<double>(),shipDataJson["mass"].get<double>(),shipDataJson["length"].get<double>(),shipPosition,heading,textureManager_.getTexWrap(fs::path("ships")/(name+".png")),
-            textureManager_.getTexWrap(fs::path("DetectionSymbols")/"neutralShip.png"),
-            textureManager_.getTexWrap(fs::path("DetectionSymbols")/"targetIndicator.png"),
-            textureManager_.getTexWrap(fs::path("DetectionSymbols")/"velocityIndicator.png"),
+            std::vector<Ship::Gun> guns;
+
+            if (shipDataJson.contains("guns")) {
+                for (const auto gunJson : shipDataJson["guns"]) {
+                    guns.emplace_back(gunJson["location"].get<double>(),gunJson["omega"].get<double>(),gunJson["restAngle"].get<double>(),gunJson["reloadTime"].get<double>(),gunJson["seaRange"].get<double>(),gunJson["airRange"].get<double>(),gunJson["muzzleVelocity"].get<double>());
+                }
+            }
+
+            auto shipPtr = std::make_shared<Ship>(shipDataJson["className"].get<std::string>(),Ship::NEUTRAL,shipType,guns,shipDataJson["health"].get<double>(),shipDataJson["maxSpeed"].get<double>(),shipDataJson["cruiseSpeed"].get<double>(),shipDataJson["mass"].get<double>(),shipDataJson["length"].get<double>(),shipDataJson["height"].get<double>(),shipPosition,heading,transponderOn,radarCoefficient,
+            textureManager_.getTexWrap(fs::path("ships")/(name+".png")),
+            textureManager_.getTexWrap(fs::path("ships")/("fallback_card.png")),
+            textureManager_.getTexWrap(fs::path("NATOSymbols")/"targetIndicator.png"),
+            textureManager_.getTexWrap(fs::path("NATOSymbols")/"velocityIndicator.png"),
             renderer,smallFont
             );
             formationShips.emplace_back(shipPtr);
             civilianShips_.emplace_back(shipPtr);
             ++shipI;
         }
-        civilianFormations_.emplace_back(std::make_unique<LooseFormation>(FORMATION_DISTANCE,formationShips,enemyWaypoints));
+        civilianFormations.emplace_back(std::make_unique<Formation>(formationDistance,formationShips,neutralWaypoints,radarOn));
     }
 
+    playerFormations_=std::make_unique<FormationManager>(formationDistance,playerFormations);
+    enemyFormations_=std::make_unique<FormationManager>(formationDistance,enemyFormations);
+    civilianFormations_=std::make_unique<FormationManager>(formationDistance,civilianFormations);
+
+    auto unknownShipName = std::make_shared<TexWrap>("unidentified ship",renderer,smallFont);
+    auto transponderText= std::make_shared<TexWrap>("Transponder",renderer,smallFont);
+    auto radarText= std::make_shared<TexWrap>("Radar echo: ",renderer,smallFont);
+    auto esmText= std::make_shared<TexWrap>("Emmision",renderer,smallFont);
+    auto visionText= std::make_shared<TexWrap>("Visual",renderer,smallFont);
+    std::vector<std::shared_ptr<const TexWrap>> sizeTexts{
+        std::make_shared<TexWrap>("Tiny",renderer,smallFont),
+        std::make_shared<TexWrap>("Very Small",renderer,smallFont),
+        std::make_shared<TexWrap>("Small",renderer,smallFont),
+        std::make_shared<TexWrap>("Medium Small",renderer,smallFont),
+        std::make_shared<TexWrap>("Medium",renderer,smallFont),
+        std::make_shared<TexWrap>("Large",renderer,smallFont),
+        std::make_shared<TexWrap>("Very Large",renderer,smallFont),
+        std::make_shared<TexWrap>("Huge",renderer,smallFont),
+    };
+    friendlyIntelligence_=std::make_unique<IntelligenceManager>(
+        unknownShipName ,
+        transponderText ,
+        visionText ,
+        radarText ,
+        esmText ,
+        sizeTexts,
+         enemyShips_.size(),civilianShips_.size(),
+         radarHorizonCoefficient,
+         clearDayVisionFraction,
+         clearNightVisionFraction,
+         rainyDayVisionFraction,
+         rainyNightVisionFraction,
+         referenceRadarHorizonHeight,
+         referenceSqrtSqrtRadarCrossSection,
+         ESMRangeFactor
+    );
+
+    enemyIntelligence_=std::make_unique<IntelligenceManager>(
+        unknownShipName ,
+        transponderText ,
+        visionText ,
+        radarText ,
+        esmText ,
+        sizeTexts,
+         playerShips_.size(),civilianShips_.size(),
+         radarHorizonCoefficient,
+         clearDayVisionFraction,
+         clearNightVisionFraction,
+         rainyDayVisionFraction,
+         rainyNightVisionFraction,
+         referenceRadarHorizonHeight,
+         referenceSqrtSqrtRadarCrossSection,
+         ESMRangeFactor
+    );
+
+    natoSymbolManager_=std::make_unique<NATOSymbolManager>(textureManager_);
 
     setupGui(renderer,screenWidth,screenHeight,smallFont,midFont,largeFont);
 
@@ -434,6 +632,9 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
     auto TC = std::make_shared<textureControl>(std::make_shared<TexWrap>(briefingText_,renderer,smallFont,std::max(screenWidth-512,512)));
     gui_->addDialogue("Briefing",TC,screenHeight,renderer,smallFont);
 
+    //One first intel pass, which will be used on the first update
+    friendlyIntelligence_->update(playerShips_,enemyShips_,civilianShips_,isDay_,isRain_,true/*This will update whether ships are displayed*/);
+    enemyIntelligence_->update(enemyShips_,playerShips_,civilianShips_,isDay_,isRain_,false);
 }
 
 
@@ -544,7 +745,6 @@ void Game::setupGui(SDL_Renderer *renderer, int screenWidth, int screenHeight, T
 Game::~Game() = default;
 
 void Game::render(SDL_Renderer *renderer, int screenWidth, int screenHeight, const InputData &userInputs, unsigned int millis, unsigned int pmillis) const {
-    SDL_Rect clipRect {0,0,screenWidth,screenHeight};
     mapTexture_->render(mapTopLeftX_,mapTopLeftY_,renderer,scale_*mapScaleFactor_);
 
     for (auto &foam : foamParticles_) {
@@ -566,51 +766,15 @@ void Game::render(SDL_Renderer *renderer, int screenWidth, int screenHeight, con
         explosion.render(renderer,mapTopLeftX_,mapTopLeftY_,screenWidth,screenHeight,scale_);
     }
 
-    //If mouse-over any ships, print its name
-    for (const auto &ship : playerShips_) {
-        auto pos = ship->getPosition();
-        int texX = pos.x*scale_+mapTopLeftX_;
-        int texY = pos.y*scale_+mapTopLeftY_;
-        int mouseXDist = (texX-userInputs.mouseXPx);
-        int mouseYDist = (texY-userInputs.mouseYPx);
+    friendlyIntelligence_->render(playerShips_,enemyShips_,civilianShips_,natoSymbolManager_,renderer,mapTopLeftX_,mapTopLeftY_,scale_,userInputs.mouseXPx,userInputs.mouseYPx,isDay_,isRain_);
 
-        if (std::abs(mouseXDist)<25 && std::abs(mouseYDist)<25) {
-            ship->getNameTexture()->render(texX,texY,0,255,0,renderer);
-            break;
-        }
-    }
-    for (const auto &ship : civilianShips_) {
-        //TODO, only if detected
-        auto pos = ship->getPosition();
-        int texX = pos.x*scale_+mapTopLeftX_;
-        int texY = pos.y*scale_+mapTopLeftY_;
-        int mouseXDist = (texX-userInputs.mouseXPx);
-        int mouseYDist = (texY-userInputs.mouseYPx);
 
-        if (std::abs(mouseXDist)<25 && std::abs(mouseYDist)<25) {
-            ship->getNameTexture()->render(texX,texY,0,255,0,renderer);
-            break;
-        }
-    }
-    for (const auto &ship : enemyShips_) {
-        //TODO, only if detected
-        auto pos = ship->getPosition();
-        int texX = pos.x*scale_+mapTopLeftX_;
-        int texY = pos.y*scale_+mapTopLeftY_;
-        int mouseXDist = (texX-userInputs.mouseXPx);
-        int mouseYDist = (texY-userInputs.mouseYPx);
-
-        if (std::abs(mouseXDist)<25 && std::abs(mouseYDist)<25) {
-            ship->getNameTexture()->render(texX,texY,0,255,0,renderer);
-            break;
-        }
-    }
-
-    playerFormation_->render(renderer,mapTopLeftX_,mapTopLeftY_,scale_);
+    playerFormations_->render(renderer,mapTopLeftX_,mapTopLeftY_,scale_);
 
     timeWarpIndicator_->render(0,screenHeight-timeWarpIndicator_->getHeight(),255,0,0,renderer);
     timeWarpNames_[timeWarpId_]->render(timeWarpIndicator_->getWidth(),screenHeight-timeWarpIndicator_->getHeight(),255,0,0,renderer);
 
+    playerFormations_->renderGUI(renderer,screenWidth,screenHeight,userInputs);
     gui_->render(renderer,screenWidth,screenHeight);
 }
 
@@ -627,8 +791,11 @@ bool Game::isOnLand(double x, double y) const {
 
 
 std::optional<std::pair<Scene::SceneInfo, SceneOutput> > Game::update(SDL_Renderer *renderer, int screenWidth, int screenHeight, const InputData &userInputs, unsigned int millis, unsigned int dmillis, TTF_Font *smallFont, TTF_Font *midFont, TTF_Font *largeFont) {
-    //Update gui
+    //--UPDATE GUI--
     gui_->update(userInputs,screenWidth,screenHeight);
+    bool mouseOverFormationGui = playerFormations_->updateGraphical(screenWidth,screenHeight,userInputs);
+
+
     if (menuSlides_->getActiveSlide()==gameplaySlide_) {
         if ((userInputs.escapePressed && !userInputs.prevEscapePressed) || escButton_->isClicked() ) {
             clickSound_->play();
@@ -683,7 +850,7 @@ std::optional<std::pair<Scene::SceneInfo, SceneOutput> > Game::update(SDL_Render
             mapTopLeftY_=userInputs.mouseYPx- oldMouseMapY_*scale_;
         }
 
-        if (userInputs.leftMouseDown && !userInputs.prevLeftMouseDown && !gui_->hoverSomething()) {
+        if (userInputs.leftMouseDown && !userInputs.prevLeftMouseDown && !gui_->hoverSomething() && !mouseOverFormationGui) {
             movingMap_=true;
             //This should remain unchanged when we move the mouse or scale
             oldMouseMapX_ = (userInputs.mouseXPx-mapTopLeftX_)/scale_;
@@ -698,12 +865,13 @@ std::optional<std::pair<Scene::SceneInfo, SceneOutput> > Game::update(SDL_Render
             movingMap_=false;
         }
         if (userInputs.homePressed && !userInputs.prevHomePressed) {
-            if (!playerShips_.empty()) {
+            auto flagship = playerFormations_->getSelectedFlagship();
+            if (flagship!=nullptr) {
                 scale_=1.0;
                 attenuateSounds();
                 zoomLevel_=0;
-                mapTopLeftX_=-playerShips_[0]->getPosition().x+screenWidth/2;
-                mapTopLeftY_=-playerShips_[0]->getPosition().y+screenHeight/2;
+                mapTopLeftX_=-flagship->getPosition().x+screenWidth/2;
+                mapTopLeftY_=-flagship->getPosition().y+screenHeight/2;
             }
         }
 
@@ -740,62 +908,68 @@ std::optional<std::pair<Scene::SceneInfo, SceneOutput> > Game::update(SDL_Render
         }
 
         // -- PLAYER CONTROLS --
-        if (!playerShips_.empty()) {
-            //Change heading
-            if (userInputs.rightMouseDown && !userInputs.prevRightMouseDown && !gui_->hoverSomething()) {
-                glm::dvec2 waypoint =glm::dvec2( (userInputs.mouseXPx-mapTopLeftX_)/scale_ ,(userInputs.mouseYPx-mapTopLeftY_)/scale_);
-                if (userInputs.shiftPressed)
-                    playerFormation_->addWaypoint(waypoint);
-                else
-                    playerFormation_->overwriteWaypoint(waypoint);
-                if (commandSpeed_==Ship::STOP) {
-                    commandSpeed_=Ship::CRUISE;
-                    speedControlMenu_->setSelection(commandSpeed_);
-                    playerFormation_->setSpeed(commandSpeed_);
-                }
-            }
-        }
-        if (speedControlMenu_->getChangedSelection()) {
-            switch (speedControlMenu_->getSelection()) {
-                default:
-                case 0:
-                    commandSpeed_=Ship::STOP;
-                    break;
-                case 1:
-                    commandSpeed_=Ship::SLOW;
-                    break;
-                case 2:
-                    commandSpeed_=Ship::CRUISE;
-                    break;
-                case 3:
-                    commandSpeed_=Ship::FULL;
-                    break;
-            }
-            playerFormation_->setSpeed(commandSpeed_);
-        }
-        if (userInputs.qPressed && !userInputs.prevQPressed && commandSpeed_>Ship::STOP) {
-            commandSpeed_=static_cast<Ship::Speed>(commandSpeed_-1);
-            speedControlMenu_->setSelection(commandSpeed_);
-            playerFormation_->setSpeed(commandSpeed_);
-        }
-        if (userInputs.wPressed && !userInputs.prevWPressed && commandSpeed_<Ship::FULL) {
-            commandSpeed_=static_cast<Ship::Speed>(commandSpeed_+1);
-            speedControlMenu_->setSelection(commandSpeed_);
-            playerFormation_->setSpeed(commandSpeed_);
-        }
-
-        //-- PHYSICS AND MANEUVER CALCULATIONS --
-        for (const auto& enemyFormation : enemyFormations_) {
-            enemyFormation->update();
-        }
-        for (const auto& civilianFormation : civilianFormations_) {
-            civilianFormation->update();
-        }
-        playerFormation_->update();
-        if (playerFormation_->noWaypoints()) {
+        auto selectedFormation = playerFormations_->getSelectedFormation();
+        if (selectedFormation==nullptr) {
             commandSpeed_=Ship::STOP;
             speedControlMenu_->setSelection(commandSpeed_);
         }
+        else {
+            //Change heading
+            if (userInputs.rightMouseDown && !userInputs.prevRightMouseDown && !gui_->hoverSomething() && !mouseOverFormationGui) {
+                glm::dvec2 waypoint =glm::dvec2( (userInputs.mouseXPx-mapTopLeftX_)/scale_ ,(userInputs.mouseYPx-mapTopLeftY_)/scale_);
+                if (userInputs.shiftPressed)
+                    selectedFormation->addWaypoint(waypoint);
+                else
+                    selectedFormation->overwriteWaypoint(waypoint);
+                if (commandSpeed_==Ship::STOP) {
+                    commandSpeed_=Ship::CRUISE;
+                    speedControlMenu_->setSelection(commandSpeed_);
+                    selectedFormation->setSpeed(commandSpeed_);
+                }
+            }
+
+            if (userInputs.rPressed && !userInputs.prevRPressed) {
+                selectedFormation->toggleRadar();
+            }
+            if (speedControlMenu_->getChangedSelection()) {
+                switch (speedControlMenu_->getSelection()) {
+                    default:
+                    case 0:
+                        commandSpeed_=Ship::STOP;
+                        break;
+                    case 1:
+                        commandSpeed_=Ship::SLOW;
+                        break;
+                    case 2:
+                        commandSpeed_=Ship::CRUISE;
+                        break;
+                    case 3:
+                        commandSpeed_=Ship::FULL;
+                        break;
+                }
+                selectedFormation->setSpeed(commandSpeed_);
+            }
+            if (userInputs.qPressed && !userInputs.prevQPressed && commandSpeed_>Ship::STOP) {
+                commandSpeed_=static_cast<Ship::Speed>(commandSpeed_-1);
+                speedControlMenu_->setSelection(commandSpeed_);
+                selectedFormation->setSpeed(commandSpeed_);
+            }
+            if (userInputs.wPressed && !userInputs.prevWPressed && commandSpeed_<Ship::FULL) {
+                commandSpeed_=static_cast<Ship::Speed>(commandSpeed_+1);
+                speedControlMenu_->setSelection(commandSpeed_);
+                selectedFormation->setSpeed(commandSpeed_);
+            }
+            auto newSpeed = selectedFormation->getSpeed();
+            if (newSpeed!=commandSpeed_) {
+                commandSpeed_=newSpeed;
+                speedControlMenu_->setSelection(commandSpeed_);
+            }
+        }
+
+        //-- PHYSICS AND MANEUVER CALCULATIONS --
+        enemyFormations_->update();
+        civilianFormations_->update();
+        playerFormations_->update();
 
         //Skip physics calculation if paused
         if (timeWarpId_!=0) {
@@ -832,6 +1006,11 @@ std::optional<std::pair<Scene::SceneInfo, SceneOutput> > Game::update(SDL_Render
             for (auto &ship : civilianShips_) {
                 updateShipWorldEffects(ship,dt,screenWidth,screenHeight);
             }
+
+            //Update the intelligence management systems
+            friendlyIntelligence_->update(playerShips_,enemyShips_,civilianShips_,isDay_,isRain_,true/*This will update whether ships are displayed*/);
+            enemyIntelligence_->update(enemyShips_,playerShips_,civilianShips_,isDay_,isRain_,false);
+
             //If the time-step was too large, slow down the simulation
             if (dt>4.0 && timeWarpId_>1) {
                 --timeWarpId_;
@@ -839,8 +1018,6 @@ std::optional<std::pair<Scene::SceneInfo, SceneOutput> > Game::update(SDL_Render
         }
 
 
-        std::erase_if(playerShips_,
-                      [](const std::shared_ptr<Ship>& s){ return s->getHealth() <= 0; });
 
         while (!smokeParticles_.empty() &&smokeParticles_.front().isDead()) {
             smokeParticles_.pop_front();
@@ -853,8 +1030,9 @@ std::optional<std::pair<Scene::SceneInfo, SceneOutput> > Game::update(SDL_Render
         }
 
         int newSpeedValue =0;
-        if (!playerShips_.empty()) {
-            newSpeedValue=static_cast<int>( playerShips_.front()->getSpeed()*MS_TO_KN*10);
+        auto flagShip = playerFormations_->getSelectedFlagship();
+        if (flagShip !=nullptr) {
+            newSpeedValue=static_cast<int>( flagShip->getSpeed()*MS_TO_KN*10);
         }
 
         if (newSpeedValue!=speedValue) {
@@ -863,9 +1041,15 @@ std::optional<std::pair<Scene::SceneInfo, SceneOutput> > Game::update(SDL_Render
             speedFractIndicator_->setValue(speedValue%10);
         }
 
-        if (playerShips_.empty()) {
+        //--CHECK MISSION END CONDITIONS--
+        int livingPlayerShips =0;
+        for (const auto& ship: playerShips_) {
+            if (ship->getHealth()>0)
+                livingPlayerShips++;
+        }
+        if (livingPlayerShips==0) {
             menuSlides_->setActiveSlide(missionFailedSlide_);
-            missionFailedReasonTC_->setTexture(std::make_shared<TexWrap>("All your ships have sunk",renderer,midFont));
+            missionFailedReasonTC_->setTexture(std::make_shared<TexWrap>("All your ships are sinking",renderer,midFont));
             return std::make_pair(SET_MUSIC,SceneOutput(1));
         }
         else {
@@ -957,8 +1141,10 @@ void Game::updateShipWorldEffects(std::shared_ptr<Ship> &ship, double dt, int sc
         glm::dvec2 shipVelocity = ship->getVelocity();
         glm::dvec2 shipParticleOffset = glm::dvec2(cos(ship->getHeading()),sin(ship->getHeading()))*ship->getLength()*0.3;
         glm::dvec2 pos = ship->getPosition();
-        if (isOnLand(pos.x,pos.y)) {
+        if (ship->getHealth()>0 && isOnLand(pos.x,pos.y)) {
             ship->destroy();
+            //Grounding halts the ship
+            ship->setSpeedExact(0.0);
             //Play explosion sound
             int texX = static_cast<int>(pos.x*scale_+mapTopLeftX_);
             int texY = static_cast<int>(pos.y*scale_+mapTopLeftY_);
@@ -970,7 +1156,7 @@ void Game::updateShipWorldEffects(std::shared_ptr<Ship> &ship, double dt, int sc
 
         }
 
-        if (enableParticles_) {
+        if (enableParticles_ && ship->identified()) {
         int health = ship->getHealth();
         int maxHealth = ship->getMaxHealth();
         if (health<maxHealth) {

@@ -1,5 +1,7 @@
 {
   "playerSpawn": [7408,177792],
+  "day": true,
+  "rain": false,
   "playerWaypoints": [[49193.75,74694.921875],[117558.59375,30022.65625]],
   "chunkSize": 185200,
   "enemyFormations":
@@ -8,7 +10,8 @@
       "comment": "An oil tanker escorted by a corvette, trying to escape the map",
       "ships": [{"name": "oilTanker"},{"name": "Steregushchiy"}],
       "spawn": [148485.5,26224.6],
-      "waypoints": [[-1000,26224.6]]
+      "waypoints": [[-1000,26224.6]],
+      "radarOn": true
     }
   ],
   "civilianFormations":
@@ -17,14 +20,15 @@
       "comment": "A German cruise ship",
       "ships": [{"name": "cruiseShip","transponder": true}],
       "spawn": [154634.765625,154634.765625],
-      "waypoints": [[126601.5625,-1000]]
-
+      "waypoints": [[126601.5625,-1000]],
+      "radarOn": true
     },
     {
       "comment": "A formation of Norwegian trawlers, strategically placed to confuse the player",
       "ships": [{"name": "trawler"},{"name": "trawler"},{"name": "trawler"},{"name": "trawler"}],
       "spawn": [90430,90430],
-      "waypoints": [[50640.625,77769.53125]]
+      "waypoints": [[50640.625,77769.53125]],
+      "radarOn": true
     }
   ]
 }

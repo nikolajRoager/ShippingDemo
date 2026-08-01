@@ -24,19 +24,10 @@ Extra special thanks to Bjarne Stroustrup, and The Standard C++ Foundation: For 
 
 And thanks to following freesound.org users who contributed sound effects:
 
-JensZygar
-LG
-ryusa
-thecoolcookie17
-Aurelon
 7778
-Flem0527
-marb7e
-GeorgeDiamond
-Coghezzi
-ellbellekc
-volivieri
-ldezem
+Isaac200000
+sheyvan
+SamsterBirdies
 
 Thanks to the people who released the pictures used in this game into public domain
 

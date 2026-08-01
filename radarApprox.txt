@@ -1,0 +1,31 @@
+True radar horizon
+
+Let a be the line from observer to target
+let b=Re+h_o
+let c=Re+h_t
+
+Let d=Re be the line from observer to target, by definition of radar horizon it is perpendicular to a, so
+
+a = sqrt( (Re+h_o)^2-Re^2 )+sqrt((Re+h_t)^2-Re^2) =
+sqrt( Re^2+h_o^2+2Reh_o-Re^2 )+sqrt(Re^2+h_t^2+2Reh_t-Re^2)=
+Re (sqrt( (h_o/Re)^2+2h_o/Re )+sqrt( (h_t/Re)^2+2h_t/Re ))
+
+If we drop higher order terms right now we get our "rule-of-thump" approximation back
+
+a = sqrt(2 Re) (sqrt( h_o )+sqrt( h_t ))
+
+Everything is in meters, if we multiply with [nmi]/[m] we get the numerical constant
+
+a= 1.931808187904786 *(sqrt(h_o)+sqrt(h_t)) where a is in nmi, and the heights are in m.
+
+For small distances compared to the radius of the earth, this IS the radar horizon, and that is what we will be using in-game.
+
+I we want to find the true range along the surface, that is Re*A, where A is the angle opposite line a, from the sine relations
+
+a^2=c^2+b^2-2*c*b*cos(A) or put another way
+
+A = cos^-1((-a^2+c^2+b^2)/(2*c*b))
+
+So we can get our answer R_horizon= Re*A
+
+But that requires an inverse cosine, which is expensive

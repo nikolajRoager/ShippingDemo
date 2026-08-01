@@ -3,10 +3,34 @@
   "health": 65,
   "maxSpeed": 14.40444,
   "cruiseSpeed": 9.26,
+  "radarCoefficient": 277800,
   "length": 138.7,
   "mass": 6645000,
   "AShM": 24,
   "SAM": 68,
-  "gun": 2,
-  "CIWS": 1
+  "guns": [
+    {
+      "comment": "OTO melara 76 mm",
+      "location": 46,
+      "restAngle": 0,
+      "omega": 0.6108652381980153,
+      "muzzleVelocity": 915,
+      "seaRange": 16000,
+      "airRange": 10000,
+      "reloadTime": 0.5
+    },
+    {
+      "comment": "OTO melara 76 mm - StanFlex",
+      "location": 41,
+      "restAngle": 0,
+      "omega": 0.6108652381980153,
+      "muzzleVelocity": 915,
+      "seaRange": 16000,
+      "airRange": 10000,
+      "reloadTime": 0.5
+    }
+  ],
+  "CIWS": 1,
+  "height": 30,
+  "type": "Frigate"
 }

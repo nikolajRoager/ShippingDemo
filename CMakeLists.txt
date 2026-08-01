@@ -11,7 +11,6 @@ file (COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
 
 if (UNIX)
     find_package(PkgConfig REQUIRED)
-
     pkg_check_modules(SDL2 sdl2)
     pkg_check_modules(SDL2_image SDL2_image)
     pkg_check_modules(SDL2_ttf SDL2_ttf)
@@ -75,10 +74,20 @@ add_executable(WhirlwindsOfDanger main.cpp
         game/game.h
         game/ship.cpp
         game/ship.h
-        game/LooseFormation.cpp
-        game/LooseFormation.h
+        game/Formation.cpp
+        game/Formation.h
         game/particle.cpp
         game/particle.h
         game/intelligenceManager.cpp
         game/intelligenceManager.h
+        game/drawCircle.h
+        game/drawCircle.cpp
+        game/natoSymbolManager.cpp
+        game/natoSymbolManager.h
+        game/FormationManager.cpp
+        game/FormationManager.h
+        game/missile.cpp
+        game/missile.h
+        game/shell.cpp
+        game/shell.h
 )

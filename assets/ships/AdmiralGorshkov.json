@@ -3,10 +3,24 @@
   "health": 65,
   "maxSpeed": 15.17611,
   "cruiseSpeed":  7.202222,
+  "radarCoefficient": 277800,
   "length": 135,
   "mass": 5400000,
   "AShM": 16,
   "SAM": 32,
-  "gun": 1,
-  "CIWS": 2
+  "guns": [
+    {
+      "comment": "AK-190 100 mm (NOT ACCURATE, it actually carries A-192M 130 mm, but I couldn't find stats for it)",
+      "location": 40.5,
+      "restAngle": 0,
+      "omega": 0.5,
+      "reloadTime": 1.0,
+      "muzzleVelocity": 880,
+      "seaRange": 21000,
+      "airRange": 8000
+    }
+  ],
+  "CIWS": 2,
+  "height": 30,
+  "type": "Frigate"
 }

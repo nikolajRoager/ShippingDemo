@@ -1,0 +1,15 @@
+{
+  "radarHorizonCoefficient_comment": "Part of a rule-of-thumb calculation of radar horizon, see radarApprox.txt for explanation",
+  "radarHorizonCoefficient": 3577.708764,
+  "referenceRadarHorizonHeight": 20,
+  "vision_comment": "Vision has been nerfed to give radar more of a point",
+  "clearDayWeatherVisionFraction": 0.5,
+  "clearNightVisionFraction": 0.25,
+  "rainyDayVisionFraction": 0.25,
+  "rainyNightVisionFraction": 0.125,
+  "ESMRangeFactor": 1.75,
+  "formationDistance": 2000,
+
+  "sqrtSqrtAShMCrossSection_comment": "The radar cross section of a moderately stealthy generic anti-ship missile, seen in the head-on profile is taken to be 2.5 cm^2, this is likely smaller than in real-life but it is chosen for gameplay purposes, taking the fourth root gives 0.4 m^0.25",
+  "sqrtSqrtAShMCrossSection": 0.4
+}

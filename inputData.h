@@ -18,6 +18,7 @@ struct InputData {
     bool zoomOutPressed=false;
 
     bool aPressed=false;
+    bool rPressed=false;
     bool dPressed=false;
     bool wPressed=false;
     bool sPressed=false;
@@ -57,6 +58,7 @@ struct InputData {
     bool sizeChanged=false;
 
     bool prevAPressed=false;
+    bool prevRPressed=false;
     bool prevDPressed=false;
     bool prevWPressed=false;
     bool prevSPressed=false;

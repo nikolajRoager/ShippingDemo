@@ -7,6 +7,30 @@
   "mass": 7570000,
   "AShM": 8,
   "SAM": 64,
-  "gun": 2,
-  "CIWS": 4
+  "guns": [
+    {
+      "comment": "AK-190 100 mm",
+      "location": 49.5,
+      "restAngle": 0,
+      "omega": 0.5,
+      "muzzleVelocity": 880,
+      "seaRange": 21000,
+      "airRange": 8000,
+      "reloadTime": 1.0
+    },
+    {
+      "comment": "AK-190 100 mm",
+      "location": 37.5,
+      "restAngle": 0,
+      "omega": 0.5,
+      "muzzleVelocity": 880,
+      "seaRange": 21000,
+      "airRange": 8000,
+      "reloadTime": 1.0
+    }
+  ],
+  "CIWS": 4,
+  "height": 40,
+  "radarCoefficient": 277800,
+  "type": "Destroyer"
 }

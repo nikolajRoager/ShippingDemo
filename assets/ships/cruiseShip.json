@@ -3,7 +3,10 @@
   "health": 35,
   "maxSpeed":8.231111,
   "cruiseSpeed": 7.716667,
+  "radarCoefficient": 37040,
   "length": 98,
   "mass": 1226,
-  "civilian": true
+  "civilian": true,
+  "height": 40,
+  "type": "Passenger Ship"
 }

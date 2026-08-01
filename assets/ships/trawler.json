@@ -5,5 +5,8 @@
   "cruiseSpeed": 3.601111,
   "length": 70,
   "mass": 800,
-  "civilian": true
+  "civilian": true,
+  "height": 5,
+  "radarCoefficient": 37040,
+  "type": "Fisher"
 }

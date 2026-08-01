@@ -1,0 +1,13 @@
+//
+// Created by nikolaj on 8/1/26.
+//
+
+#ifndef WHIRLWINDSOFDANGERSKETCH_SHELL_H
+#define WHIRLWINDSOFDANGERSKETCH_SHELL_H
+
+
+class Shell {
+};
+
+
+#endif //WHIRLWINDSOFDANGERSKETCH_SHELL_H

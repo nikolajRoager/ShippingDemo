@@ -6,7 +6,9 @@
 #define WHIRLWINDSOFDANGERSKETCH_GAME_H
 #include <random>
 
-#include "LooseFormation.h"
+#include "intelligenceManager.h"
+#include "Formation.h"
+#include "FormationManager.h"
 #include "particle.h"
 #include "ship.h"
 #include "../NumberRenderer.h"
@@ -52,13 +54,21 @@ private:
 
     //Ships and their formations
     std::vector<std::shared_ptr<Ship>> playerShips_;
-    std::unique_ptr<LooseFormation > playerFormation_;
+    int selectedFormationId_=0;
 
     std::vector<std::shared_ptr<Ship>> enemyShips_;
-    std::vector<std::unique_ptr<LooseFormation >> enemyFormations_;
 
     std::vector<std::shared_ptr<Ship>> civilianShips_;
-    std::vector<std::unique_ptr<LooseFormation >> civilianFormations_;
+
+    std::unique_ptr<FormationManager> playerFormations_;
+    std::unique_ptr<FormationManager> enemyFormations_;
+    std::unique_ptr<FormationManager> civilianFormations_;
+
+    //intel management software for both sides
+    std::unique_ptr<IntelligenceManager> friendlyIntelligence_;
+    std::unique_ptr<IntelligenceManager> enemyIntelligence_;
+
+    std::unique_ptr<NATOSymbolManager> natoSymbolManager_;
 
     //For keeping track of mission progress
     struct enemyShipCounter {
@@ -92,6 +102,8 @@ private:
     std::shared_ptr<const TexWrap> mapTexture_;
     //Collection of bools which are true if this pixel is on land
     std::vector<bool> landMap;
+    bool isDay_ = true;
+    bool isRain_ = false;
 
     TextureManager textureManager_;
     NumberRenderer midNumberRenderer_;
@@ -116,7 +128,6 @@ private:
     int speedValue;//Current speed in increments of .1 knot
 
     std::shared_ptr<const SoundWrap> clickSound_;
-    std::shared_ptr<const SoundWrap> gongSound_;
 
     std::shared_ptr<SoundWrap> explosionSound_;
 

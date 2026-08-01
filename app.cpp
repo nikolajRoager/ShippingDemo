@@ -306,6 +306,9 @@ void App::run() {
                     else if (event.key.keysym.sym == SDLK_a) {
                         currentInput.aPressed=true;
                     }
+                    else if (event.key.keysym.sym == SDLK_r) {
+                        currentInput.rPressed=true;
+                    }
                     else if (event.key.keysym.sym == SDLK_s) {
                         currentInput.sPressed=true;
                     }
@@ -403,6 +406,9 @@ void App::run() {
                     }
                     else if (event.key.keysym.sym == SDLK_a) {
                         currentInput.aPressed=false;
+                    }
+                    else if (event.key.keysym.sym == SDLK_r) {
+                        currentInput.rPressed=false;
                     }
                     else if (event.key.keysym.sym == SDLK_s) {
                         currentInput.sPressed=false;
@@ -592,6 +598,7 @@ void App::run() {
         currentInput.prevSixPressed=currentInput.sixPressed;
         currentInput.prevCommaPressed=currentInput.commaPressed;
         currentInput.prevPeriodPressed=currentInput.periodPressed;
+        currentInput.prevRPressed=currentInput.rPressed;
         currentInput.typingTextUpdated=false;
     }
 

@@ -33,7 +33,6 @@ TitleMenu::TitleMenu(SDL_Renderer *renderer, int screenWidth, int screenHeight, 
     largeFontSize_ = largeFontSize;
 
     clickSound_=std::make_shared<SoundWrap>(assetsPath()/"sounds"/"click.mp3");
-    gongSound_=std::make_shared<SoundWrap>(assetsPath()/"sounds"/"gong.mp3");
 
     {
         std::ifstream splashStream(assetsPath()/"menu"/"splashscreen.txt");
@@ -328,7 +327,6 @@ std::optional<std::pair<Scene::SceneInfo, SceneOutput> > TitleMenu::update(SDL_R
             //Start smooth transition out
             if (userInputs.enterPressed && !userInputs.prevEnterPressed) {
                 transitionIn_=false;
-                gongSound_->play();
             }
             if (!transitionIn_ && transitionTimer_==0) {
                 transitionIn_=true;

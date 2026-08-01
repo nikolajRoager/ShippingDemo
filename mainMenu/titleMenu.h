@@ -40,7 +40,6 @@ private:
 
     //Assets
     std::shared_ptr<const SoundWrap> clickSound_;
-    std::shared_ptr<const SoundWrap> gongSound_;
     std::string splashText_;
 
     //For fade-in

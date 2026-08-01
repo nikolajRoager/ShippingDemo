@@ -4,7 +4,7 @@ This guide is also available as a PDF document, in the same folder as the game e
 
 You can always open the guide by pressing the ? button in the top left
 
-Press and hold the left-mouse button to drag the map around, use the mouse-wheel to zoom in and out. Press the HOME button on your keyboard to focus the camera on your ships
+Press and hold the left-mouse button to drag the map around, use the mouse-wheel to zoom in and out. Press the HOME button on your keyboard to focus the camera on your current formation's flagship
 
 Your ships, and enemy ships, are displayed as actual images of ships when you zoom in on them, and with a NATO Icon, the NATO icon for your ship is a blue circle, the enemies are a red square rotated 45 degrees, Unknown ships are yellow flower symbols, and civilian ships are green squares.
 
@@ -12,11 +12,30 @@ Inside the friendly ship symbol, there is: a green line indicating the direction
 
 Feel free to close this guide, Have a look around, when you are ready come back and go to the next page about ship controls
 NEWPAGE
-Ship controls
+Formations
 
-Your ships automatically move in a loose formation centered on the flag-ship. If the flagship sinks, another ship becomes flag-ship
-The formation sails towards the waypoints (green crosses), RIGHT CLICK to clear all waypoints and place a new one, SHIFT+RIGHT CLICK to add multiple waypoints.
-The slowest ship dictates the speed. When the final waypoint is reched, the formation stops.
+Every ship, plane, helicopter, drone, submarine, or missile is part of a "formation". And you control things by giving orders to formation, not individual ships.
+Every formation has a flagship. If the flagship is destroyed, another vessel in the formation takes that role.
+
+You can see your formations at the bottom of the screen, displayed as ship-cards. The cards which are grouped together and have a same coloured background are in a formation, the first card to the left is the flagship.
+You can drag cards with your left-mouse button to other existing formations to re-assign ships, or move them to the new formation marker on the right to create a new formation.
+
+By right-clicking a card in a formation, you select that formation. All movement and attack orders now go to ships in that formation. The selected formation has a slightly taller background than the rest.
+
+TODO, consider if helicopters and ships should be together
+Note that formations are strictly only for the same type, you can't put a drone in a formation with ships.
+
+TODO write about flying formations
+
+TODO write about submarine formations
+
+TODO write about formation mission when added
+
+NEWPAGE
+Formation control for ship, when under manual control
+
+Every formation automatically sails towards the waypoints (green crosses), RIGHT CLICK to clear all waypoints and place a new one, SHIFT+RIGHT CLICK to add multiple waypoints.
+The slowest ship dictates the speed. When the final waypoint is reached, the formation stops.
 
 In the bar at the top of the screen, you can see your speed indicator drop-down menu, if you click the drop-down bottom you can select your commanded speed between "stop","slow", "cruise" and "full" (By the way "flank"-speed is a purely American term, and you are playing as a European ship).
 You can also press the "q" amd "w" to decrease/increase commanded speed.
@@ -30,25 +49,25 @@ Feel free to close this guide and try sailing around a bit, when you are ready c
 Oh, and try not to sail aground, that will destroy your ship.
 NEWPAGE
 Spotting the enemy
-
 Before you can fight the enemy, you need to SPOT them and IDENTIFY them
-WARNING, there are CIVILIAN ships in some missions! If you attack a civilian ship, you LOOSE!
-
 Ships which are spotted but not identified are marked with a yellow flower.
 Identified enemy ships are marked with a red square rotated 45 degrees, Identified civilian ships are marked with a green square
-Missiles and drones get marked with the top-half of the ship-marker, around either a M or D
+flying targets get marked with the top-half of the ship-marker
+When a target has been spotted but not identified, our land-based intelligence will work on identifying the ships, it may take up to half an hour in-game time (use time-warp), but eventually the ship will be identified.
 
-When a ship has been spotted but not identified, our land-based intelligence will work on identifying the ships, it may take up to half an hour in-game time (use time-warp), but eventually the ship will be identified.
+In this game, you have 6 tools for spotting targets : transponder, Vision, Radar, ESM, active sonar, passive sonar.
+1. Some civilian ships have their transponder turned on, they are always spotted and identified. In game, the transponder never lies.
+2. Vision: The small YELLOW dashed circle around your ships is your visual range (assuming that other ships are 20 m tall), ALL ships inside this gets instantly SPOTTED and IDENTIFIED. Visual spotting range depends on weather and time of day.
+3. Radar: Press R to toggle radar for one of the ships in your formation ON or OFF (it starts OFF), when on:
+    A green dashed circle indicates your radar horizon (again assuming 20 m tall targets) (Taller ships, or high-flying drones or aircraft can see and be seen further, approximately ∝√height);
+    A green dashed circle (with bigger dashes) indicates your radar power-range: how far away you radar could spot an anti-ship missile sized target if there was no horizon (this range is ∝(cross-section)^(1/4));
+    To be seen on radar, a target needs to be inside both power-range and horizon.
+    Targets in radar range get SPOTTED but NOT IDENTIFIED (Except missiles, a sea-skimming track moving at mach 1 is never neutral and therefore instantly gets classified).
+4. ESM (Electronic Support Measured): your ships automatically IDENTIFY when the enemy turns on their radar (military radar is very distinct) and is within the horizon and in 1.75x power range of the radar.  BEWARE, the enemy has ESM too.
+We will cover Sonar later.
 
-In this game, you have 4 tools for spotting ships, missiles, or drones: transponder, Vision, Radar, ESM, and Drones.
-
-0. Some civilian ships have their transponder turned on, they are always spotted and identified.
-1. Vision: The small YELLOW dashed circle around your ships with an 8 nautical mile radius is your visual range, ALL ships inside this gets instantly SPOTTED and IDENTIFIED.
-2. Radar: Press R to toggle your flag-ships radar ON and OFF (it starts off), when on, a green dashed circle indicates your 100 nautical miles radar range, ships in range get SPOTTED but not IDENTIFIED.
-3. ESM (Electronic Support Measured): your ships automatically detect when the enemy turns on their radar, enemy radar can instantly be SPOTTED and IDENTIFIED at 2 times the range of their radar (so basically the entire map)
-4. Drones: each of your ships has 1 recon drone, which you can launch in the direction of your mouse by pressing D. Recon drones fly until they are out of fuel (at 40 nautical miles) or reach the destination, then they return to the ship. Drones can do visual spotting, and has a radar with 30 nmi range.
-
-BEWARE, the enemy has ESM too: if you turn on your radar, they will both spot and identify you. It is often safer to use drones for recon, and only turn on your radar when you know you have already been spotted!
-You may want to read the next page on defending yourself against enemy missiles before turning on your radar.
+Place your mouse over a target to see how we have spotted it, and what information we have.
 NEWPAGE
-What air defence doing?!
+Launching aircraft and drones
+NEWPAGE
+What air-defence doing

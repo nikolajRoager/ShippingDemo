@@ -8,5 +8,20 @@
   "AShM": 4,
   "SAM": 12,
   "gun": 1,
-  "CIWS": 2
+  "CIWS": 2,
+  "height": 20,
+  "radarCoefficient":138900,
+  "guns": [
+    {
+      "comment": "AK-190 100 mm",
+      "location": 22.5,
+      "restAngle": 0,
+      "omega": 0.5,
+      "muzzleVelocity": 880,
+      "seaRange": 21000,
+      "airRange": 8000,
+      "reloadTime": 1.0
+    }
+  ],
+  "type": "Corvette"
 }

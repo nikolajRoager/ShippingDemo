@@ -5,5 +5,8 @@
   "cruiseSpeed": 7.202222,
   "length": 330,
   "mass": 6e+8,
-  "civilian": true
+  "radarCoefficient": 37040,
+  "civilian": true,
+  "height": 50,
+  "type": "Oil Tanker"
 }

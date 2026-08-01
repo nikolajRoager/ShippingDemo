@@ -2,13 +2,14 @@
 // Created by nikolaj on 7/19/26.
 //
 
-#include "LooseFormation.h"
+#include "Formation.h"
 
 #include <algorithm>
 #include <iostream>
 #include <utility>
 
-LooseFormation::LooseFormation(double desiredDistance, const std::vector<std::shared_ptr<Ship> > &ships, std::deque<glm::dvec2> waypoints) {
+Formation::Formation(double desiredDistance, const std::vector<std::shared_ptr<Ship> > &ships, std::deque<glm::dvec2> waypoints, bool radarOn) {
+    formationRadarOn_ = radarOn;
     desiredDistance_ = desiredDistance;
     ships_ = ships;
     waypoints_=std::move(waypoints);
@@ -18,9 +19,10 @@ LooseFormation::LooseFormation(double desiredDistance, const std::vector<std::sh
     else {
         formationSpeed_=Ship::CRUISE;
     }
+    updateRadar();
 }
 
-void LooseFormation::render(SDL_Renderer *renderer, double mapTopLeftX, double mapTopLeftY, double scale) const {
+void Formation::render(SDL_Renderer *renderer, double mapTopLeftX, double mapTopLeftY, double scale) const {
     if (ships_.empty())
         return;
     SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
@@ -43,17 +45,19 @@ void LooseFormation::render(SDL_Renderer *renderer, double mapTopLeftX, double m
 
 
 
-double LooseFormation::referenceSpeed() const {
+double Formation::referenceSpeed() const {
     double minSpeed = std::numeric_limits<double>::max();
     for (auto& s : ships_) minSpeed = std::min(minSpeed, s->speedForEnum(formationSpeed_));
     return minSpeed;
 }
 
-void LooseFormation::update() {
+void Formation::update() {
     removeSunkShips();
     if (ships_.empty()) return;
 
     auto& lead = ships_[0];
+
+
 
     while (!waypoints_.empty()) {
         //Set heading to waypoint
@@ -100,12 +104,39 @@ void LooseFormation::update() {
     }
 }
 
-void LooseFormation::removeSunkShips() {
-    std::erase_if(ships_,
-                  [](const std::shared_ptr<Ship>& s){ return s->getHealth() <= 0; });
+void Formation::updateRadar() {
+    if (ships_.empty()) return;
+    if (formationRadarOn_) {
+        //Only one ship should be emitting, and that should be the ship with the best radar
+        double highestCoefficient=0;
+        int tallestId=0;
+        for (int i = 1; i < ships_.size(); ++i) {
+            ships_[i]->setRadar(false);
+            if (ships_[i]->getRadarCoefficient()>highestCoefficient) {
+                highestCoefficient=ships_[i]->getRadarCoefficient();
+                tallestId=i;
+            }
+        }
+        ships_[tallestId]->setRadar(true);
+    }
+    else {
+        //Tell everyone to go to EMCON
+        for (auto& ship : ships_) {
+            ship->setRadar(false);
+        }
+    }
 }
 
-void LooseFormation::setSpeed(Ship::Speed speed) {
+
+void Formation::removeSunkShips() {
+    size_t erased = std::erase_if(ships_,
+                  [](const std::shared_ptr<Ship>& s){ return s->getHealth() <= 0; });
+    //Check if the radar picket has been sunk
+    if (erased!=0)
+        updateRadar();
+}
+
+void Formation::setSpeed(Ship::Speed speed) {
     if (!waypoints_.empty())
         formationSpeed_ = speed;
     else
