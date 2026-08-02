@@ -1,0 +1,1 @@
+To change the name of the project, search for the old name in CMakeList.txt, app.cpp, guide.txt, credits.txt, titleMenu.cpp

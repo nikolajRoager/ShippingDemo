@@ -6,18 +6,22 @@
   "radarCoefficient": 277800,
   "length": 135,
   "mass": 5400000,
-  "AShM": 16,
+  "HAShM": 16,
   "SAM": 32,
+  "shells": 2000,
   "guns": [
     {
-      "comment": "AK-190 100 mm (NOT ACCURATE, it actually carries A-192M 130 mm, but I couldn't find stats for it)",
+      "name": "AK-100",
+      "comment":" (NOT ACCURATE, it actually carries A-192M 130 mm, but I couldn't find stats for it)",
       "location": 40.5,
       "restAngle": 0,
       "omega": 0.5,
       "reloadTime": 1.0,
       "muzzleVelocity": 880,
       "seaRange": 21000,
-      "airRange": 8000
+      "airRange": 8000,
+      "shellsPerBurst": 20,
+      "burstReloadTime": 5
     }
   ],
   "CIWS": 2,

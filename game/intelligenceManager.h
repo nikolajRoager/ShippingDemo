@@ -15,6 +15,7 @@ class IntelligenceManager {
 public:
     IntelligenceManager(
         std::shared_ptr<const TexWrap> unknownShipNameTexture,
+        std::shared_ptr<const TexWrap> sinkingShipNameTexture,
         std::shared_ptr<const TexWrap> transponderText,
         std::shared_ptr<const TexWrap> visionText,
         std::shared_ptr<const TexWrap> radarText,
@@ -76,6 +77,7 @@ private:
     std::vector<Contact> neutralContacts_;
 
     std::shared_ptr<const TexWrap> unknownShipNameText_;
+    std::shared_ptr<const TexWrap> sinkingShipNameText_;
     std::shared_ptr<const TexWrap> transponderText_;
     std::shared_ptr<const TexWrap> visionText_;
     std::shared_ptr<const TexWrap> radarText_;

@@ -20,9 +20,12 @@ void NATOSymbolManager::requestTextures(std::vector<fs::path>& textureRequests) 
     textureRequests.push_back(fs::path("NATOSymbols")/"militarySeaSurfaceIcons"/"destroyer.png");
     textureRequests.push_back(fs::path("NATOSymbols")/"militarySeaSurfaceIcons"/"cruiser.png");
     textureRequests.push_back(fs::path("NATOSymbols")/"militarySeaSurfaceIcons"/"carrier.png");
+    textureRequests.push_back(fs::path("NATOSymbols")/"militarySeaSurfaceIcons"/"eliminated.png");
 }
 
 NATOSymbolManager::NATOSymbolManager(const TextureManager &manager) {
+    eliminatedTexture_=manager.getTexWrap(fs::path("NATOSymbols")/"militarySeaSurfaceIcons"/"eliminated.png");
+
     shipTexture_[FRIEND]=manager.getTexWrap(fs::path("NATOSymbols")/"friendlyShip.png");
     symbolWidth=shipTexture_[FRIEND]->getWidth();
     symbolHeight=shipTexture_[FRIEND]->getHeight();
@@ -42,7 +45,9 @@ NATOSymbolManager::NATOSymbolManager(const TextureManager &manager) {
     shipTypeTextures_[CARRIER]=manager.getTexWrap(fs::path("NATOSymbols")/"militarySeaSurfaceIcons"/"carrier.png");
 }
 
-void NATOSymbolManager::renderShip(int x, int y, Side side, ShipType type, SDL_Renderer *renderer) {
+void NATOSymbolManager::renderShip(int x, int y, Side side, ShipType type, bool eliminated, SDL_Renderer *renderer) {
     shipTexture_[side]->render(x,y,renderer,1.0,true,true);
     shipTypeTextures_[type]->render(x,y,renderer,1.0,true,true);
+    if (eliminated && side != UNKNOWN_SIDE)
+        eliminatedTexture_->render(x,y,renderer,1.0,true,true);
 }

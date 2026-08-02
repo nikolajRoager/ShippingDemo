@@ -26,5 +26,6 @@ struct CircleRecord {
 };
 
 void drawCircle(SDL_Renderer* renderer,int i, const std::vector<CircleRecord>& circles, Uint8 R, Uint8 G, Uint8 B, double dashLength=10, double spaceLength=5);
+void drawCircle(SDL_Renderer* renderer, CircleRecord circle, Uint8 R, Uint8 G, Uint8 B, double dashLength=10, double spaceLength=5);
 
 #endif //WHIRLWINDSOFDANGERSKETCH_DRAWCIRCLE_H

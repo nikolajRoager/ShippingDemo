@@ -21,9 +21,11 @@ public:
 
     [[nodiscard]] int getValue() const {return value_;}
     void setValue(int value) {
-        value_ = value;
-        width_= numberRenderer_.getWidth(value_);
-        widthChanged_ = true;
+        if (value != value_) {
+            value_ = value;
+            width_= numberRenderer_.getWidth(value_);
+            widthChanged_ = true;
+        }
     }
 
 private:

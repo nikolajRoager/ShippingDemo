@@ -68,6 +68,43 @@ We will cover Sonar later.
 
 Place your mouse over a target to see how we have spotted it, and what information we have.
 NEWPAGE
+What air-defence doing: defending your ship
+
+TODO describe exact method
+When your ships come under attack, or you attack the enemy, they will automatically defend themselves using every weapon at their disposal.
+
+In this game, ships have a number of hit-points (Hp). As damage accumulates the ships start smoking heavily. when their Hp reaches 0 the crew abandons ship and the ship starts sinking.
+A full list of ships and their Hp, and the damage from all weapons is available on the next page.
+NEWPAGE
+Hp list
+TODO remember to update
+* Corvettes have 40 Hp
+* Frigates have 65 Hp
+* Destroyers have 80 Hp
+* Oil tankers have 60 Hp (but please don't sink them, that would be an ecological disaster)
+* Cruise ships have 35 Hp
+* Fishing Trawlers have 10 Hp
+
+* Guns do 1 Hp damage
+* SAMs (surface-to-air missiles) used in the anti-surface role do 10 Hp
+* AShMs (anti-ship missiles) do 15 Hp
+* HAShMs (heavy anti-ship missiles) do 25 Hp
+
+NEWPAGE
 Launching aircraft and drones
 NEWPAGE
-What air-defence doing
+Attacking with Guns and Missiles
+
+Let's start with your guns, the black circle is your gun range, you can shoot at targets in range by mousing over them and holding down the G key (Be aware, individual shells are not rendered in-game, and it takes a little while for your guns to rotate to the target, and a little while for the shells to fly through the air)
+Your guns fire in short bursts, then take a few seconds to recalibrate their fire-control solution.
+Your number of shells for your guns in your selected formation is shown at the top of the screen.
+
+Your guns also have an anti-air range, that is the gray circle, guns automatically shoot at hostile air targets in range
+A single gun-hit does 1 Hp damage to ships
+
+In real life, there are many different types of missiles, all with their own capabilities and statistics.
+TODO flesh out when we add missiles
+This game only includes 3 different types of missiles, you can see how many you carry of each at the top of your screen:
+1. SAMs: Surface to Air Missiles, ... You can see your SAM range as the CYAN circle; SAMS can also be launched at ships ..., but if you do, you have fewer SAMs to protect yourself with.
+2. AShMs: Anti-Ship missiles, ... Your AShM range is the red circle, in game these are based on the stats of the Harpoon missile and have ...
+3. HAShMs: Heavy Anti-Ship missiles, Soviet and Russian ships tend to carry heavier AShMs which do more damage and have much longer range. If you carry HAShMs their range is a larger red circle.

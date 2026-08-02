@@ -5,22 +5,26 @@
   "cruiseSpeed":  7.202222,
   "length": 104.5,
   "mass": 2200000,
+  "comment": "As far as wikipedia goes, this thing doesn't carry any offensive missiles... I added 4 just because this game doesn't support DP missiles",
   "AShM": 4,
   "SAM": 12,
   "gun": 1,
   "CIWS": 2,
   "height": 20,
+  "shells": 1500,
   "radarCoefficient":138900,
   "guns": [
     {
-      "comment": "AK-190 100 mm",
+      "name": "AK-100",
       "location": 22.5,
       "restAngle": 0,
       "omega": 0.5,
       "muzzleVelocity": 880,
       "seaRange": 21000,
       "airRange": 8000,
-      "reloadTime": 1.0
+      "reloadTime": 1.0,
+      "shellsPerBurst": 20,
+      "burstReloadTime": 5
     }
   ],
   "type": "Corvette"

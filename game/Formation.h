@@ -36,6 +36,12 @@ public:
     ///Set speed, speed command is an enum between STOP, SLOW, CRUISE, and FULL (formation uses the speed of the slowest ship)
     void setSpeed(Ship::Speed speed);
 
+    ///For direct player-control, fire guns at this patch of ocean
+    void shootAt(glm::dvec2 target) {
+        for (auto& ship : ships_) {
+            ship->fireGunsAt(target,true);
+        }
+    }
 
     [[nodiscard]] bool getFormationRadarOn() const {return formationRadarOn_;}
     void toggleRadar() {formationRadarOn_=!formationRadarOn_; updateRadar();}
@@ -47,7 +53,29 @@ public:
     [[nodiscard]] bool noWaypoints() const {return waypoints_.empty();}
     [[nodiscard]] Ship::Speed getSpeed() const {return formationSpeed_;}
 
+    int getShells() const {
+        return shells_;
+    }
+
+    int getSAMs() const {
+        return SAMs_;
+    }
+
+    int getAShMs() const {
+        return AShMs_;
+    }
+
+    int getHAShMs() const {
+        return HAShMs_;
+    }
+
 private:
+    //Ammunition
+    int shells_;
+    int HAShMs_;
+    int AShMs_;
+    int SAMs_;
+
     ///Change radar policy, called whenever radar policy changes, or a ship leaves the formation
     void updateRadar();
     bool formationRadarOn_=false;

@@ -9,8 +9,10 @@
   "SAM": 68,
   "gun": 2,
   "CIWS": 1,
+  "shells": 3000,
   "guns": [
     {
+      "name": "OTOMelara76mm",
       "comment": "OTO melara 76 mm",
       "location": 46,
       "restAngle": 0,
@@ -18,9 +20,12 @@
       "muzzleVelocity": 915,
       "seaRange": 16000,
       "airRange": 10000,
-      "reloadTime": 0.5
+      "reloadTime": 0.5,
+      "shellsPerBurst": 20,
+      "burstReloadTime": 5
     },
     {
+      "name": "OTOMelara76mm",
       "comment": "OTO melara 76 mm - StanFlex",
       "location": 41,
       "restAngle": 0,
@@ -28,7 +33,9 @@
       "muzzleVelocity": 915,
       "seaRange": 16000,
       "airRange": 10000,
-      "reloadTime": 0.5
+      "reloadTime": 0.5,
+      "shellsPerBurst": 20,
+      "burstReloadTime": 5
     }
   ],
   "height": 30,

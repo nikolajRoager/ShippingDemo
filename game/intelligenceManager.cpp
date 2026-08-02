@@ -9,7 +9,9 @@
 
 #include "drawCircle.h"
 
-IntelligenceManager::IntelligenceManager(std::shared_ptr<const TexWrap> unknownShipNameTexture,
+IntelligenceManager::IntelligenceManager(
+    std::shared_ptr<const TexWrap> unknownShipNameTexture,
+    std::shared_ptr<const TexWrap> sinkingShipNameTexture,
 std::shared_ptr<const TexWrap> transponderText,
 std::shared_ptr<const TexWrap> visionText,
 std::shared_ptr<const TexWrap> radarText,
@@ -33,6 +35,7 @@ const std::vector<std::shared_ptr<const TexWrap>>& sizeTexts,
     rainyDayVisionFraction_ = rainyDayVisionFraction;
     rainyNightVisionFraction_ = rainyNightVisionFraction;
 
+    sinkingShipNameText_ = std::move(sinkingShipNameTexture);
     unknownShipNameText_ = std::move(unknownShipNameTexture);
     transponderText_ = std::move(transponderText);
     ESMText_ = std::move(ESMText);
@@ -216,9 +219,27 @@ void IntelligenceManager::render(const std::vector<std::shared_ptr<Ship>>& frien
         int screenX =static_cast<int>(pos.x*scale+mapTopLeftX);
         int screenY =static_cast<int>(pos.y*scale+mapTopLeftY);
 
-        symbolManager->renderShip(screenX,screenY,NATOSymbolManager::FRIEND,ship->getType(),renderer);
+        symbolManager->renderShip(screenX,screenY,NATOSymbolManager::FRIEND,ship->getType(),ship->getHealth()<=0,renderer);
 
         double radarHorizonRange = scale*radarHorizonCoefficient_*(referenceRadarHorizonSqrtHeight_+ship->getSqrtHeight());
+
+
+        //Always display gun ranges
+        CircleRecord seaGunCircle;
+        seaGunCircle.x_=screenX;
+        seaGunCircle.y_=screenY;
+        seaGunCircle.radius_=ship->getGunSeaRange()*scale;
+        seaGunCircle.radius2_=seaGunCircle.radius_*seaGunCircle.radius_;
+
+        drawCircle(renderer,seaGunCircle,0,0,0);
+
+        CircleRecord airGunCircle;
+        airGunCircle.x_=screenX;
+        airGunCircle.y_=screenY;
+        airGunCircle.radius_=ship->getGunAirRange()*scale;
+        airGunCircle.radius2_=airGunCircle.radius_*airGunCircle.radius_;
+
+        drawCircle(renderer,airGunCircle,128,128,128);
 
 
         if (ship->radarOn()) {
@@ -267,10 +288,10 @@ void IntelligenceManager::render(const std::vector<std::shared_ptr<Ship>>& frien
         int screenX =static_cast<int>(contact.position_.x*scale+mapTopLeftX);
         int screenY =static_cast<int>(contact.position_.y*scale+mapTopLeftY);
         if (contact.status_==Contact::SPOTTED) {
-            symbolManager->renderShip(screenX,screenY,NATOSymbolManager::UNKNOWN_SIDE,contact.type_,renderer);
+            symbolManager->renderShip(screenX,screenY,NATOSymbolManager::UNKNOWN_SIDE,contact.type_,neutralShips[i]->getHealth()<=0,renderer);
         }
         else if (contact.status_==Contact::IDENTIFIED) {
-            symbolManager->renderShip(screenX,screenY,NATOSymbolManager::NEUTRAL,contact.type_,renderer);
+            symbolManager->renderShip(screenX,screenY,NATOSymbolManager::NEUTRAL,contact.type_,neutralShips[i]->getHealth()<=0,renderer);
         }
     }
     for (int i = 0 ; i < enemyContacts_.size(); i++) {
@@ -280,10 +301,10 @@ void IntelligenceManager::render(const std::vector<std::shared_ptr<Ship>>& frien
         int screenX =static_cast<int>(contact.position_.x*scale+mapTopLeftX);
         int screenY =static_cast<int>(contact.position_.y*scale+mapTopLeftY);
         if (contact.status_==Contact::SPOTTED) {
-            symbolManager->renderShip(screenX,screenY,NATOSymbolManager::UNKNOWN_SIDE,contact.type_,renderer);
+            symbolManager->renderShip(screenX,screenY,NATOSymbolManager::UNKNOWN_SIDE,contact.type_,enemyShips[i]->getHealth()<=0,renderer);
         }
         else if (contact.status_==Contact::IDENTIFIED) {
-            symbolManager->renderShip(screenX,screenY,NATOSymbolManager::FOE,contact.type_,renderer);
+            symbolManager->renderShip(screenX,screenY,NATOSymbolManager::FOE,contact.type_,enemyShips[i]->getHealth()<=0,renderer);
         }
     }
     //Make a second pass to print the names of the selected ship on top

@@ -24,6 +24,7 @@ struct InputData {
     bool sPressed=false;
     bool qPressed=false;
     bool ePressed=false;
+    bool gPressed=false;
 
     bool onePressed=false;
     bool twoPressed=false;
@@ -64,6 +65,7 @@ struct InputData {
     bool prevSPressed=false;
     bool prevQPressed=false;
     bool prevEPressed=false;
+    bool prevGPressed=false;
 
 
     bool prevOnePressed=false;

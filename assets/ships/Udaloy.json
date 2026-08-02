@@ -5,28 +5,33 @@
   "cruiseSpeed":  7.202222,
   "length": 163,
   "mass": 7570000,
-  "AShM": 8,
+  "HAShM": 8,
   "SAM": 64,
+  "shells": 4000,
   "guns": [
     {
-      "comment": "AK-190 100 mm",
+      "name": "AK-100",
       "location": 49.5,
       "restAngle": 0,
       "omega": 0.5,
       "muzzleVelocity": 880,
       "seaRange": 21000,
       "airRange": 8000,
-      "reloadTime": 1.0
+      "reloadTime": 1.0,
+      "shellsPerBurst": 20,
+      "burstReloadTime": 5
     },
     {
-      "comment": "AK-190 100 mm",
+      "name": "AK-100",
       "location": 37.5,
       "restAngle": 0,
       "omega": 0.5,
       "muzzleVelocity": 880,
       "seaRange": 21000,
       "airRange": 8000,
-      "reloadTime": 1.0
+      "reloadTime": 1.0,
+      "shellsPerBurst": 20,
+      "burstReloadTime": 5
     }
   ],
   "CIWS": 4,

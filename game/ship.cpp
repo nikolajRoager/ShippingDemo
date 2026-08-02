@@ -8,9 +8,22 @@
 #include <iostream>
 #include <utility>
 
-Ship::Ship(const std::string &className,Side side,NATOSymbolManager::ShipType type, const std::vector<Gun>& guns, int health,double maxSpeed,double cruiseSpeed,double mass, double length, double height,glm::dvec2 position, double heading,bool transponder,double radarCoefficient,std::shared_ptr<const TexWrap> texture,std::shared_ptr<const TexWrap> cardTexture,std::shared_ptr<const TexWrap> targetTexture,std::shared_ptr<const TexWrap> velocityTexture,SDL_Renderer *renderer,TTF_Font* smallFont):
+
+//Smallest angle betwixt two angles
+double angleDiff(double a, double b) {
+    double diff = std::fmod(b - a, 2 * M_PI);
+    if (diff < -M_PI) diff += 2 * M_PI;
+    if (diff > M_PI)  diff -= 2 * M_PI;
+    return diff;
+}
+
+Ship::Ship(const std::string &className,Side side,NATOSymbolManager::ShipType type, const std::vector<Gun>& guns, int health,double maxSpeed,double cruiseSpeed,double mass, double length, double height,glm::dvec2 position, double heading,bool transponder,double radarCoefficient,int shells,int HAShM,int AShM, int SAM,std::shared_ptr<const TexWrap> texture,std::shared_ptr<const TexWrap> cardTexture,std::shared_ptr<const TexWrap> targetTexture,std::shared_ptr<const TexWrap> velocityTexture,SDL_Renderer *renderer,TTF_Font* smallFont):
 currentState_(position,heading,glm::dvec2(cos(heading)*cruiseSpeed,sin(heading)*cruiseSpeed),0)
     {
+    shells_=shells;
+    HAShMs_=HAShM;
+    AShMs_=AShM;
+    SAMs_=SAM;
     guns_ = guns;
     radarCoefficient_=radarCoefficient;
     type_=type;
@@ -87,6 +100,15 @@ void Ship::render(SDL_Renderer *renderer, double mapTopLeftX, double mapTopLeftY
         targetTexture_->render(screenX,screenY,renderer,1.0,true,true,false,1,0,targetScreenAngle);
     }
 
+    SDL_SetRenderDrawColor(renderer,255,0,0,255);
+    for (const auto& gun : guns_) {
+        glm::dvec2 pos0 = currentState_.position_+glm::dvec2(cos(currentState_.heading_),sin(currentState_.heading_))*gun.location_;
+        int screenX0 =static_cast<int>(pos0.x*scale+mapTopLeftX);
+        int screenY0 =static_cast<int>(pos0.y*scale+mapTopLeftY);
+
+        gun.gunTexture_->render(screenX0,screenY0,renderer,scale,true,true,false,1,0,screenAngle+gun.angle_);
+    }
+
 }
 
 // Linear blend of two states (needed by RK4)
@@ -115,8 +137,9 @@ static Ship::ShipState weightedRK4Sum(
 
 
 
-void Ship::update(double dt) {
-    //DOES NOT NEED TO CHECK SHIP HEALTH, even sunk ships can move
+void Ship::updateMotion(double dt) {
+    //---Update motion---
+    //WE DO NOT NEED TO CHECK SHIP HEALTH, even sunk ships can move
 
     //Calculate number of substeps to use
     const double maxSubStep = 0.05; // smaller = safer but more CPU
@@ -132,6 +155,79 @@ void Ship::update(double dt) {
         ShipState netDerivative = weightedRK4Sum(k1, k2, k3, k4);
         currentState_ = blend(currentState_, netDerivative, h);
     }
+}
+
+void Ship::updateGuns(double dt, const std::shared_ptr<const SoundWrap> &artillerySound, double mapTopLeftX, double mapTopLeftY, double scale, int screenWidth, int screenHeight,std::list<Shell>& shells, std::mt19937& rng) {
+    //Moving the guns require having a functioning ship
+    if (health_>0) {
+        //Ignore the nonsense spouted by the IDE, this code is NOT UNREACHABLE
+        if (hasGunTarget_ && shells_>0 ){
+            //Move towards the target
+            for (auto &gun : guns_) {
+                glm::dvec2 gunPosition = currentState_.position_+glm::dvec2(cos(currentState_.heading_),sin(currentState_.heading_))*gun.location_;
+                double angleToTarget = atan2(currentGunTarget_.y-gunPosition.y,currentGunTarget_.x-gunPosition.x);
+                double diff = angleDiff(gun.angle_+currentState_.heading_,angleToTarget);
+                //Rotate towards the target
+                double delta  = gun.omega_*dt;
+                bool inRange = false;
+                double absDiff = std::abs(diff);
+                if (delta>absDiff) {
+                    inRange = true;
+                    delta = absDiff;
+                }
+                gun.angle_ +=  diff>0 ? delta :-delta;
+
+                glm::dvec2 D = currentGunTarget_-gunPosition;
+                //If out of range, we still track but do not shoot
+                double D2 = D.x*D.x+D.y*D.y;
+
+                if ( ((targetSurface_ && D2>gun.seaRange2_) || (!targetSurface_ && D2>gun.airRange2_)) || D2<length_*length_) {
+                    inRange = false;
+                }
+
+                if (inRange) {
+                    bool fired = false;
+                    double timeLeft = dt;
+
+
+                    while (gun.cooldown_ < timeLeft) {
+                        timeLeft -= gun.cooldown_;
+                        gun.cooldown_ =gun.shellsSinceBurstStart_+1 == gun.shellsPerBurst_ ? gun.burstReloadTime_ :  gun.reloadTime_;
+
+                        if (shells_>0) {
+                            shells.emplace_back(gunPosition, gun.muzzleVelocity_, currentGunTarget_, rng,targetSurface_,side_==FRIEND);
+                            shells.back().update(timeLeft);
+                            gun.shellsSinceBurstStart_=(gun.shellsSinceBurstStart_+1)%gun.shellsPerBurst_;
+
+                            fired = true;
+                            --shells_;
+                            if (shells_<0)
+                                shells_ = 0;
+                        }
+                    }
+
+                    gun.cooldown_ -= timeLeft;
+
+                    if (fired) {
+                        int screenX = static_cast<int>(currentState_.position_.x * scale + mapTopLeftX);
+                        int screenY = static_cast<int>(currentState_.position_.y * scale + mapTopLeftY);
+                        artillerySound->play(screenX, screenY, screenWidth, screenHeight, scale);
+                    }
+                }
+            }
+        }
+        else {
+            //Return guns to resting position
+            for (auto &gun : guns_) {
+                double diff = angleDiff(gun.angle_,0);
+                double delta  = std::min(gun.omega_*dt,std::abs(diff));
+                gun.angle_ +=  diff>0 ? delta :-delta;
+            }
+        }
+
+    }
+
+    hasGunTarget_=false;
 }
 
 Ship::ShipState Ship::computeDerivative(const ShipState &s) const {
@@ -215,5 +311,16 @@ void Ship::setSpeed(Speed newSpeed) {
         case FULL:
             currentThrust_=maxThrust_;
             break;
+    }
+}
+
+
+void Ship::takeDamage(int damage, bool playerDidThis) {
+    health_-=damage;
+    hitByPlayer_ = hitByPlayer_ || playerDidThis;
+    if (health_<0) {//Oof
+        sunkByPlayer_=playerDidThis;
+        health_=0;
+        currentThrust_=0.0;
     }
 }

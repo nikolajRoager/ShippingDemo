@@ -10,6 +10,7 @@
 #include "Formation.h"
 #include "FormationManager.h"
 #include "particle.h"
+#include "shell.h"
 #include "ship.h"
 #include "../NumberRenderer.h"
 #include "../scene.h"
@@ -125,11 +126,18 @@ private:
 
     std::shared_ptr<numberControl> speedFloorIndicator_;
     std::shared_ptr<numberControl> speedFractIndicator_;
+
+    std::shared_ptr<numberControl> shellsIndicator_;
+    std::shared_ptr<numberControl> SAMsIndicator_;
+    std::shared_ptr<numberControl> AShMsIndicator_;
+    std::shared_ptr<numberControl> HAShMsIndicator_;
+
     int speedValue;//Current speed in increments of .1 knot
 
     std::shared_ptr<const SoundWrap> clickSound_;
-
+    std::shared_ptr<SoundWrap> artillerySound_;
     std::shared_ptr<SoundWrap> explosionSound_;
+    std::shared_ptr<SoundWrap> splashSound_;
 
     std::string briefingText_;
 
@@ -172,6 +180,8 @@ private:
     ParticleTemplate explosionTemplate_;
     std::deque<Particle> explosionParticles_;
 
+    std::list<Shell> shells_;
+    std::shared_ptr<const TexWrap> shellTexture_;
 };
 
 

@@ -44,6 +44,7 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
         fs::path("particles")/"smoke.png",
         fs::path("particles")/"explosion.png",
         fs::path("particles")/"foam.png",
+        fs::path("shell.png"),
     };
 
     NATOSymbolManager::requestTextures(textureRequests);
@@ -69,6 +70,20 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
     //Make a first pass through the level data, and the player forces, to load ship texture
     for (const auto &shipJson : playerDataJson) {
         std::string name = shipJson["name"].get<std::string>();
+
+        std::ifstream shipFile (assetsPath()/"ships"/(name+".json"));
+        if (!shipFile.is_open()) {
+            throw std::runtime_error("Could open ships.json for ship "+name);
+        }
+        nlohmann::json shipDataJson;
+        shipFile >> shipDataJson;
+        shipFile.close();
+        if (shipDataJson.contains("guns")) {
+            for (const auto& gunJson : shipDataJson["guns"]) {
+                textureRequests.emplace_back(fs::path("ships")/(gunJson["name"].get<std::string>()+".png"));
+            }
+        }
+
         textureRequests.emplace_back(fs::path("ships")/(name+".png"));
         textureRequests.emplace_back(fs::path("ships")/(name+"_card.png"));
         ++nShips;
@@ -77,12 +92,38 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
     for (const auto &formationJson : levelDataJson["enemyFormations"]) {
         for (const auto &shipJson : formationJson["ships"]) {
             std::string name = shipJson["name"].get<std::string>();
+
+            std::ifstream shipFile (assetsPath()/"ships"/(name+".json"));
+            if (!shipFile.is_open()) {
+                throw std::runtime_error("Could open ships.json for ship "+name);
+            }
+            nlohmann::json shipDataJson;
+            shipFile >> shipDataJson;
+            shipFile.close();
+            if (shipDataJson.contains("guns")) {
+                for (const auto& gunJson : shipDataJson["guns"]) {
+                    textureRequests.emplace_back(fs::path("ships")/(gunJson["name"].get<std::string>()+".png"));
+                }
+            }
             textureRequests.emplace_back(fs::path("ships")/(name+".png"));
         }
     }
     for (const auto &formationJson : levelDataJson["civilianFormations"]) {
         for (const auto &shipJson : formationJson["ships"]) {
             std::string name = shipJson["name"].get<std::string>();
+
+            std::ifstream shipFile (assetsPath()/"ships"/(name+".json"));
+            if (!shipFile.is_open()) {
+                throw std::runtime_error("Could open ships.json for ship "+name);
+            }
+            nlohmann::json shipDataJson;
+            shipFile >> shipDataJson;
+            shipFile.close();
+            if (shipDataJson.contains("guns")) {
+                for (const auto& gunJson : shipDataJson["guns"]) {
+                    textureRequests.emplace_back(fs::path("ships")/(gunJson["name"].get<std::string>()+".png"));
+                }
+            }
             textureRequests.emplace_back(fs::path("ships")/(name+".png"));
         }
     }
@@ -93,6 +134,8 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
     textureManager_.launchTextureLoading(textureRequests, assetsPath(),loadingPool);
 
     clickSound_=std::make_shared<SoundWrap>(assetsPath()/"sounds"/"click.mp3");
+    splashSound_=std::make_shared<SoundWrap>(assetsPath()/"sounds"/"splash.wav");
+    artillerySound_=std::make_shared<SoundWrap>(assetsPath()/"sounds"/"artillery.wav");
     explosionSound_=std::make_shared<SoundWrap>(assetsPath()/"sounds"/"explosion.wav");
 
     //Read mission briefing
@@ -188,6 +231,7 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
         SDL_UnlockSurface(surface);
         SDL_FreeSurface(surface);
     }
+
 
 
     {
@@ -317,6 +361,7 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
     smokeTemplate_.texture_=textureManager_.getTexWrap(fs::path("particles")/"smoke.png");
     explosionTemplate_.texture_=textureManager_.getTexWrap(fs::path("particles")/"explosion.png");
     foamTemplate_.texture_=textureManager_.getTexWrap(fs::path("particles")/"foam.png");
+    shellTexture_=textureManager_.getTexWrap(fs::path("shell.png"));
     mapTexture_=textureManager_.getTexWrap(fs::path("levels")/levelName/"map.png");
     mapScaleFactor_=static_cast<double>(chunkSize)/static_cast<double>(mapTexture_->getWidth());
 
@@ -381,12 +426,18 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
         std::vector<Ship::Gun> guns;
 
         if (shipDataJson.contains("guns")) {
-            for (const auto gunJson : shipDataJson["guns"]) {
-                guns.emplace_back(gunJson["location"].get<double>(),gunJson["omega"].get<double>(),gunJson["restAngle"].get<double>(),gunJson["reloadTime"].get<double>(),gunJson["seaRange"].get<double>(),gunJson["airRange"].get<double>(),gunJson["muzzleVelocity"].get<double>());
+            for (const auto& gunJson : shipDataJson["guns"]) {
+
+                guns.emplace_back(gunJson["location"].get<double>(),gunJson["omega"].get<double>(),gunJson["restAngle"].get<double>(),gunJson["reloadTime"].get<double>(),gunJson["seaRange"].get<double>(),gunJson["airRange"].get<double>(),gunJson["muzzleVelocity"].get<double>(),gunJson["shellsPerBurst"].get<int>(),gunJson["burstReloadTime"].get<double>(),textureManager_.getTexWrap(fs::path("ships")/(gunJson["name"].get<std::string>()+".png")));
             }
         }
 
-        playerShips_.emplace_back(std::make_shared<Ship>(shipDataJson["className"].get<std::string>(),Ship::FRIEND,shipType,guns,shipDataJson["health"].get<double>(),shipDataJson["maxSpeed"].get<double>(),shipDataJson["cruiseSpeed"].get<double>(),shipDataJson["mass"].get<double>(),shipDataJson["length"].get<double>(),shipDataJson["height"].get<double>(),shipPosition,heading,transponderOn,radarCoefficient ,
+        int shells = shipDataJson.contains("shells")? shipDataJson["shells"].get<int>():0;
+        int HAShMs = shipDataJson.contains("HAShM")? shipDataJson["HAShM"].get<int>():0;
+        int AShMs = shipDataJson.contains("AShM")? shipDataJson["AShM"].get<int>():0;
+        int SAMs = shipDataJson.contains("SAM")? shipDataJson["SAM"].get<int>():0;
+
+        playerShips_.emplace_back(std::make_shared<Ship>(shipDataJson["className"].get<std::string>(),Ship::FRIEND,shipType,guns,shipDataJson["health"].get<double>(),shipDataJson["maxSpeed"].get<double>(),shipDataJson["cruiseSpeed"].get<double>(),shipDataJson["mass"].get<double>(),shipDataJson["length"].get<double>(),shipDataJson["height"].get<double>(),shipPosition,heading,transponderOn,radarCoefficient ,shells,HAShMs,AShMs,SAMs,
         textureManager_.getTexWrap(fs::path("ships")/(name+".png")),
         textureManager_.getTexWrap(fs::path("ships")/(name+"_card.png")),
         textureManager_.getTexWrap(fs::path("NATOSymbols")/"targetIndicator.png"),
@@ -462,12 +513,17 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
             std::vector<Ship::Gun> guns;
 
             if (shipDataJson.contains("guns")) {
-                for (const auto gunJson : shipDataJson["guns"]) {
-                    guns.emplace_back(gunJson["location"].get<double>(),gunJson["omega"].get<double>(),gunJson["restAngle"].get<double>(),gunJson["reloadTime"].get<double>(),gunJson["seaRange"].get<double>(),gunJson["airRange"].get<double>(),gunJson["muzzleVelocity"].get<double>());
+                for (const auto& gunJson : shipDataJson["guns"]) {
+                    guns.emplace_back(gunJson["location"].get<double>(),gunJson["omega"].get<double>(),gunJson["restAngle"].get<double>(),gunJson["reloadTime"].get<double>(),gunJson["seaRange"].get<double>(),gunJson["airRange"].get<double>(),gunJson["muzzleVelocity"].get<double>(),gunJson["shellsPerBurst"].get<int>(),gunJson["burstReloadTime"].get<double>(),textureManager_.getTexWrap(fs::path("ships")/(gunJson["name"].get<std::string>()+".png")));
                 }
             }
 
-            auto shipPtr = std::make_shared<Ship>(shipDataJson["className"].get<std::string>(),Ship::FOE,shipType,guns,shipDataJson["health"].get<double>(),shipDataJson["maxSpeed"].get<double>(),shipDataJson["cruiseSpeed"].get<double>(),shipDataJson["mass"].get<double>(),shipDataJson["length"].get<double>(),shipDataJson["height"].get<double>(),shipPosition,heading,transponderOn,radarCoefficient,
+            int shells = shipDataJson.contains("shells")? shipDataJson["shells"].get<int>():0;
+            int HAShMs = shipDataJson.contains("HAShM")? shipDataJson["HAShM"].get<int>():0;
+            int AShMs = shipDataJson.contains("AShM")? shipDataJson["AShM"].get<int>():0;
+            int SAMs = shipDataJson.contains("SAM")? shipDataJson["SAM"].get<int>():0;
+
+            auto shipPtr = std::make_shared<Ship>(shipDataJson["className"].get<std::string>(),Ship::FOE,shipType,guns,shipDataJson["health"].get<double>(),shipDataJson["maxSpeed"].get<double>(),shipDataJson["cruiseSpeed"].get<double>(),shipDataJson["mass"].get<double>(),shipDataJson["length"].get<double>(),shipDataJson["height"].get<double>(),shipPosition,heading,transponderOn,radarCoefficient,shells,HAShMs,AShMs,SAMs,
             textureManager_.getTexWrap(fs::path("ships")/(name+".png")),
             textureManager_.getTexWrap(fs::path("ships")/("fallback_card.png")),
             textureManager_.getTexWrap(fs::path("NATOSymbols")/"targetIndicator.png"),
@@ -550,12 +606,17 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
             std::vector<Ship::Gun> guns;
 
             if (shipDataJson.contains("guns")) {
-                for (const auto gunJson : shipDataJson["guns"]) {
-                    guns.emplace_back(gunJson["location"].get<double>(),gunJson["omega"].get<double>(),gunJson["restAngle"].get<double>(),gunJson["reloadTime"].get<double>(),gunJson["seaRange"].get<double>(),gunJson["airRange"].get<double>(),gunJson["muzzleVelocity"].get<double>());
+                for (const auto& gunJson : shipDataJson["guns"]) {
+                    guns.emplace_back(gunJson["location"].get<double>(),gunJson["omega"].get<double>(),gunJson["restAngle"].get<double>(),gunJson["reloadTime"].get<double>(),gunJson["seaRange"].get<double>(),gunJson["airRange"].get<double>(),gunJson["muzzleVelocity"].get<double>(),gunJson["shellsPerBurst"].get<int>(),gunJson["burstReloadTime"].get<double>(),textureManager_.getTexWrap(fs::path("ships")/(gunJson["name"].get<std::string>()+".png")));
                 }
             }
 
-            auto shipPtr = std::make_shared<Ship>(shipDataJson["className"].get<std::string>(),Ship::NEUTRAL,shipType,guns,shipDataJson["health"].get<double>(),shipDataJson["maxSpeed"].get<double>(),shipDataJson["cruiseSpeed"].get<double>(),shipDataJson["mass"].get<double>(),shipDataJson["length"].get<double>(),shipDataJson["height"].get<double>(),shipPosition,heading,transponderOn,radarCoefficient,
+            int shells = shipDataJson.contains("shells")? shipDataJson["shells"].get<int>():0;
+            int HAShMs = shipDataJson.contains("HAShM")? shipDataJson["HAShM"].get<int>():0;
+            int AShMs = shipDataJson.contains("AShM")? shipDataJson["AShM"].get<int>():0;
+            int SAMs = shipDataJson.contains("SAM")? shipDataJson["SAM"].get<int>():0;
+
+            auto shipPtr = std::make_shared<Ship>(shipDataJson["className"].get<std::string>(),Ship::NEUTRAL,shipType,guns,shipDataJson["health"].get<double>(),shipDataJson["maxSpeed"].get<double>(),shipDataJson["cruiseSpeed"].get<double>(),shipDataJson["mass"].get<double>(),shipDataJson["length"].get<double>(),shipDataJson["height"].get<double>(),shipPosition,heading,transponderOn,radarCoefficient,shells,HAShMs,AShMs,SAMs,
             textureManager_.getTexWrap(fs::path("ships")/(name+".png")),
             textureManager_.getTexWrap(fs::path("ships")/("fallback_card.png")),
             textureManager_.getTexWrap(fs::path("NATOSymbols")/"targetIndicator.png"),
@@ -573,6 +634,7 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
     enemyFormations_=std::make_unique<FormationManager>(formationDistance,enemyFormations);
     civilianFormations_=std::make_unique<FormationManager>(formationDistance,civilianFormations);
 
+    auto sinkingText = std::make_shared<TexWrap>("Sinking!",renderer,smallFont);
     auto unknownShipName = std::make_shared<TexWrap>("unidentified ship",renderer,smallFont);
     auto transponderText= std::make_shared<TexWrap>("Transponder",renderer,smallFont);
     auto radarText= std::make_shared<TexWrap>("Radar echo: ",renderer,smallFont);
@@ -590,6 +652,7 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
     };
     friendlyIntelligence_=std::make_unique<IntelligenceManager>(
         unknownShipName ,
+        sinkingText,
         transponderText ,
         visionText ,
         radarText ,
@@ -608,6 +671,7 @@ timeWarpIndicator_(std::make_shared<TexWrap>("Time-warp: ",renderer,midFont))
 
     enemyIntelligence_=std::make_unique<IntelligenceManager>(
         unknownShipName ,
+        sinkingText ,
         transponderText ,
         visionText ,
         radarText ,
@@ -680,8 +744,20 @@ void Game::setupGui(SDL_Renderer *renderer, int screenWidth, int screenHeight, T
     auto knotsTC = std::make_shared<textureControl>(std::make_shared<TexWrap>("kn",renderer,midFont));
     auto periodTC= std::make_shared<textureControl>(std::make_shared<TexWrap>(".",renderer,midFont));
 
+    auto shellsTC = std::make_shared<textureControl>(std::make_shared<TexWrap>(" Shells: ",renderer,midFont));
+    shellsIndicator_ = std::make_shared<numberControl>(midNumberRenderer_,0);
+
+    auto SAMsTC = std::make_shared<textureControl>(std::make_shared<TexWrap>(" SAMs: ",renderer,midFont));
+    SAMsIndicator_ = std::make_shared<numberControl>(midNumberRenderer_,0);
+
+    auto AShMsTC = std::make_shared<textureControl>(std::make_shared<TexWrap>(" AShMs: ",renderer,midFont));
+    AShMsIndicator_ = std::make_shared<numberControl>(midNumberRenderer_,0);
+
+    auto HAShMsTC = std::make_shared<textureControl>(std::make_shared<TexWrap>(" HAShMs: ",renderer,midFont));
+    HAShMsIndicator_ = std::make_shared<numberControl>(midNumberRenderer_,0);
+
     //The bar with all the stuff
-    auto barStack = std::make_shared<stackControl>(stackControl::HORIZONTAL,std::vector<std::shared_ptr<control>>{escButton_,guideButton_,briefingButton_,speedControlMenu_,speedTC,speedFloorIndicator_,periodTC,speedFractIndicator_,knotsTC});
+    auto barStack = std::make_shared<stackControl>(stackControl::HORIZONTAL,std::vector<std::shared_ptr<control>>{escButton_,guideButton_,briefingButton_,speedControlMenu_,speedTC,speedFloorIndicator_,periodTC,speedFractIndicator_,knotsTC,shellsTC,shellsIndicator_,SAMsTC,SAMsIndicator_,AShMsTC,AShMsIndicator_,HAShMsTC,HAShMsIndicator_});
 
     auto gameplayTable = std::make_shared<tableControl>(screenWidth,screenHeight,std::vector<tableControl::rowOrCol>{tableControl::rowOrCol(tableControl::rowOrCol::SHRINK,screenHeight),tableControl::rowOrCol(tableControl::rowOrCol::EXPAND,screenHeight)},std::vector<tableControl::rowOrCol>{tableControl::rowOrCol(tableControl::rowOrCol::EXPAND,screenWidth)},std::vector<std::shared_ptr<control> >{barStack,mainScreen},std::vector<tableControl::background>{tableControl::background(150,150,150),tableControl::background()});
 
@@ -745,6 +821,7 @@ void Game::setupGui(SDL_Renderer *renderer, int screenWidth, int screenHeight, T
 Game::~Game() = default;
 
 void Game::render(SDL_Renderer *renderer, int screenWidth, int screenHeight, const InputData &userInputs, unsigned int millis, unsigned int pmillis) const {
+
     mapTexture_->render(mapTopLeftX_,mapTopLeftY_,renderer,scale_*mapScaleFactor_);
 
     for (auto &foam : foamParticles_) {
@@ -759,10 +836,10 @@ void Game::render(SDL_Renderer *renderer, int screenWidth, int screenHeight, con
     for (const auto &ship : civilianShips_) {
         ship->render(renderer,mapTopLeftX_,mapTopLeftY_,scale_);
     }
-    for (auto &smoke : smokeParticles_) {
+    for (const auto &smoke : smokeParticles_) {
         smoke.render(renderer,mapTopLeftX_,mapTopLeftY_,screenWidth,screenHeight,scale_);
     }
-    for (auto &explosion : explosionParticles_) {
+    for (const auto &explosion : explosionParticles_) {
         explosion.render(renderer,mapTopLeftX_,mapTopLeftY_,screenWidth,screenHeight,scale_);
     }
 
@@ -793,10 +870,10 @@ bool Game::isOnLand(double x, double y) const {
 std::optional<std::pair<Scene::SceneInfo, SceneOutput> > Game::update(SDL_Renderer *renderer, int screenWidth, int screenHeight, const InputData &userInputs, unsigned int millis, unsigned int dmillis, TTF_Font *smallFont, TTF_Font *midFont, TTF_Font *largeFont) {
     //--UPDATE GUI--
     gui_->update(userInputs,screenWidth,screenHeight);
-    bool mouseOverFormationGui = playerFormations_->updateGraphical(screenWidth,screenHeight,userInputs);
 
 
     if (menuSlides_->getActiveSlide()==gameplaySlide_) {
+        bool mouseOverFormationGui = playerFormations_->updateGraphical(screenWidth,screenHeight,userInputs);
         if ((userInputs.escapePressed && !userInputs.prevEscapePressed) || escButton_->isClicked() ) {
             clickSound_->play();
             gui_->closeAllDialogues();
@@ -964,6 +1041,14 @@ std::optional<std::pair<Scene::SceneInfo, SceneOutput> > Game::update(SDL_Render
                 commandSpeed_=newSpeed;
                 speedControlMenu_->setSelection(commandSpeed_);
             }
+
+            if (userInputs.gPressed) {
+                selectedFormation->shootAt(glm::dvec2((userInputs.mouseXPx-mapTopLeftX_)/scale_,(userInputs.mouseYPx-mapTopLeftY_)/scale_));
+            }
+            shellsIndicator_->setValue(selectedFormation->getShells());
+            SAMsIndicator_->setValue(selectedFormation->getSAMs());
+            AShMsIndicator_->setValue(selectedFormation->getAShMs());
+            HAShMsIndicator_->setValue(selectedFormation->getHAShMs());
         }
 
         //-- PHYSICS AND MANEUVER CALCULATIONS --
@@ -987,25 +1072,87 @@ std::optional<std::pair<Scene::SceneInfo, SceneOutput> > Game::update(SDL_Render
                 explosion.update(dt);
             }
             for (auto &ship : playerShips_) {
-                ship->update(dt);
+                ship->updateMotion(dt);
             }
             for (auto &ship : enemyShips_) {
-                ship->update(dt);
+                ship->updateMotion(dt);
             }
             for (auto &ship : civilianShips_) {
-                ship->update(dt);
+                ship->updateMotion(dt);
+            }
+            for (auto &shell : shells_) {
+                shell.update(dt);
             }
 
-            //Ship interactions with land, particles or missiles happen on main thread
+            //Ship interactions with land, particles, shells or missiles happen on main thread
             for (auto &ship : playerShips_) {
                 updateShipWorldEffects(ship,dt,screenWidth,screenHeight);
+                ship->updateGuns(dt,artillerySound_,mapTopLeftX_,mapTopLeftY_,scale_,screenWidth,screenHeight,shells_,rng_);
             }
             for (auto &ship : enemyShips_) {
                 updateShipWorldEffects(ship,dt,screenWidth,screenHeight);
+                ship->updateGuns(dt,artillerySound_,mapTopLeftX_,mapTopLeftY_,scale_,screenWidth,screenHeight,shells_,rng_);
             }
             for (auto &ship : civilianShips_) {
                 updateShipWorldEffects(ship,dt,screenWidth,screenHeight);
+                ship->updateGuns(dt,artillerySound_,mapTopLeftX_,mapTopLeftY_,scale_,screenWidth,screenHeight,shells_,rng_);
             }
+
+            for (const auto& shell : shells_) {
+                if (shell.getTimeToImpact()<=0) {
+                    auto pos = shell.getPosition();
+                    int screenX =static_cast<int>(pos.x*scale_+mapTopLeftX_);
+                    int screenY =static_cast<int>(pos.y*scale_+mapTopLeftY_);
+
+                    //Shell has hit the water or air
+                    if (shell.targetSurface()) {
+                        bool hit = false;
+                        for (const auto& ship :playerShips_) {
+                            glm::dvec2 D = pos-ship->getPosition();
+                            double D2 = D.x*D.x+D.y*D.y;
+                            //Simple radius of impact, is computationally easier
+                            if (D2<ship->getLength()*ship->getLength()*0.5) {
+                                ship->takeDamage(1,shell.isPlayer());
+                                hit=true;
+                            }
+                        }
+                        for (const auto& ship : civilianShips_) {
+                            glm::dvec2 D = pos-ship->getPosition();
+                            double D2 = D.x*D.x+D.y*D.y;
+                            //Simple radius of impact, is computationally easier
+                            if (D2<ship->getLength()*ship->getLength()*0.5) {
+                                ship->takeDamage(1,shell.isPlayer());
+                                hit=true;
+                            }
+                        }
+                        for (const auto& ship : enemyShips_) {
+                            glm::dvec2 D = pos-ship->getPosition();
+                            double D2 = D.x*D.x+D.y*D.y;
+                            //Simple radius of impact, is computationally easier
+                            if (D2<ship->getLength()*ship->getLength()*0.5) {
+                                ship->takeDamage(1,shell.isPlayer());
+                                hit=true;
+                            }
+                        }
+                        //Todo check surfaced submarines
+
+                        if (hit) {
+                            explosionSound_->play(screenX,screenY,screenWidth,screenHeight,scale_);
+                            explosionParticles_.emplace_back(explosionTemplate_,pos,glm::dvec2(0));
+                        }
+                        else {
+                            splashSound_->play(screenX,screenY,screenWidth,screenHeight,scale_);
+                            foamParticles_.emplace_back(foamTemplate_,pos,glm::dvec2(0));
+                        }
+                    }
+                    else {
+                        //TODO check if we hit flying targets
+                        explosionSound_->play(screenX,screenY,screenWidth,screenHeight,scale_);
+                        smokeParticles_.emplace_back(smokeTemplate_,pos,glm::dvec2(0));
+                    }
+                }
+            }
+            std::erase_if(shells_,[](const Shell& s){ return s.getTimeToImpact() <= 0; });
 
             //Update the intelligence management systems
             friendlyIntelligence_->update(playerShips_,enemyShips_,civilianShips_,isDay_,isRain_,true/*This will update whether ships are displayed*/);
@@ -1047,6 +1194,13 @@ std::optional<std::pair<Scene::SceneInfo, SceneOutput> > Game::update(SDL_Render
             if (ship->getHealth()>0)
                 livingPlayerShips++;
         }
+        for (const auto& ship : civilianShips_) {
+            if (ship->getHealth()<=0 && ship->sunkByPlayer()) {
+                menuSlides_->setActiveSlide(missionFailedSlide_);
+                missionFailedReasonTC_->setTexture(std::make_shared<TexWrap>("You sank a civilian ship",renderer,midFont));
+                return std::make_pair(SET_MUSIC,SceneOutput(1));
+            }
+        }
         if (livingPlayerShips==0) {
             menuSlides_->setActiveSlide(missionFailedSlide_);
             missionFailedReasonTC_->setTexture(std::make_shared<TexWrap>("All your ships are sinking",renderer,midFont));
@@ -1071,7 +1225,7 @@ std::optional<std::pair<Scene::SceneInfo, SceneOutput> > Game::update(SDL_Render
         }
 
     }
-    //Has to be
+
     else if (menuSlides_->getActiveSlide()==settingsSlide_){
         movingMap_=false;
         if (userInputs.escapePressed && !userInputs.prevEscapePressed) {
@@ -1134,6 +1288,7 @@ std::optional<std::pair<Scene::SceneInfo, SceneOutput> > Game::update(SDL_Render
 void Game::attenuateSounds() {
     double factor = std::clamp((scale_-SOUND_SCALE_LIMIT)/(1-SOUND_SCALE_LIMIT),0.0,1.0);
     explosionSound_->attenuate(factor);
+    artillerySound_->attenuate(factor);
 }
 
 void Game::updateShipWorldEffects(std::shared_ptr<Ship> &ship, double dt, int screenWidth, int screenHeight) {

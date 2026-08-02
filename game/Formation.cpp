@@ -20,6 +20,17 @@ Formation::Formation(double desiredDistance, const std::vector<std::shared_ptr<S
         formationSpeed_=Ship::CRUISE;
     }
     updateRadar();
+
+    shells_=0;
+    HAShMs_=0;
+    AShMs_=0;
+    SAMs_=0;
+    for (const auto& ship : ships_) {
+        shells_+=ship->getShells();
+        HAShMs_+=ship->getHAShMs();
+        AShMs_+=ship->getAShMs();
+        SAMs_+=ship->getSAMs();
+    }
 }
 
 void Formation::render(SDL_Renderer *renderer, double mapTopLeftX, double mapTopLeftY, double scale) const {
@@ -85,8 +96,16 @@ void Formation::update() {
 
     const double Kp_speed = 0.05; // tune: how aggressively stragglers catch up
 
+    shells_=0;
+    HAShMs_=0;
+    AShMs_=0;
+    SAMs_=0;
     for (size_t i = 1; i < ships_.size(); ++i) {
         auto& ship = ships_[i];
+        shells_+=ship->getShells();
+        HAShMs_+=ship->getHAShMs();
+        AShMs_+=ship->getAShMs();
+        SAMs_+=ship->getSAMs();
         glm::dvec2 toTarget = leadPosition - ship->getPosition();
         double dist = glm::length(toTarget);
 

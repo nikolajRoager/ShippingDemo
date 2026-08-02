@@ -18,13 +18,14 @@ public:
     enum Side {FRIEND,FOE,NEUTRAL,UNKNOWN_SIDE};
     static void requestTextures(std::vector<fs::path>& textureRequests);
     explicit NATOSymbolManager(const TextureManager& manager);
-    void renderShip(int x, int y, Side side, ShipType type, SDL_Renderer* renderer);
+    void renderShip(int x, int y, Side side, ShipType type, bool eliminated, SDL_Renderer* renderer);
     int getSymbolWidth() const {return symbolWidth;};
     int getSymbolHeight() const {return symbolHeight;}
 private:
     int symbolWidth;
     int symbolHeight;
     std::map<Side,std::shared_ptr<const TexWrap>> shipTexture_;
+    std::shared_ptr<const TexWrap> eliminatedTexture_;
 
     std::map<ShipType,std::shared_ptr<const TexWrap>> shipTypeTextures_;
 };

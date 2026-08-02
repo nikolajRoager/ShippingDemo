@@ -5,9 +5,15 @@
 #ifndef WHIRLWINDSOFDANGERSKETCH_SHIP_H
 #define WHIRLWINDSOFDANGERSKETCH_SHIP_H
 
+#include <list>
 #include <memory>
+#include <random>
+#include <utility>
 
 #include "natoSymbolManager.h"
+#include "particle.h"
+#include "shell.h"
+#include "../soundWrap.h"
 #include "../TexWrap.h"
 #include "../glm/glm.hpp"
 
@@ -23,9 +29,17 @@ public:
         double reloadTime_;
         double seaRange_;
         double airRange_;
+        double seaRange2_;
+        double airRange2_;
         double muzzleVelocity_;
+        ///We fire in burst, with a somewhat larger delay between
+        int shellsPerBurst_;
+        double burstReloadTime_;
+        int shellsSinceBurstStart_;
 
-        Gun(double location, double omega, double restAngle, double reloadTime, double seaRange, double airRange, double muzzleVelocity) {
+        std::shared_ptr<const TexWrap> gunTexture_;
+
+        Gun(double location, double omega, double restAngle, double reloadTime, double seaRange, double airRange, double muzzleVelocity, int shellsPerBurst, double burstReloadTime,std::shared_ptr<const TexWrap> gunTexture) {
             location_ = location;
             omega_ = omega;
             angle_ = restAngle;
@@ -33,8 +47,14 @@ public:
             reloadTime_ = reloadTime;
             seaRange_ = seaRange;
             airRange_ = airRange;
+            seaRange2_= seaRange_*seaRange_;
+            airRange2_= airRange_*airRange_;
             muzzleVelocity_ = muzzleVelocity;
+            shellsPerBurst_ = shellsPerBurst;
+            burstReloadTime_ = burstReloadTime;
             cooldown_ = 0;
+            shellsSinceBurstStart_=0;
+            gunTexture_=std::move(gunTexture);
         }
     };
 
@@ -59,10 +79,12 @@ public:
     }
 
     void destroy() {health_=0; currentThrust_=0.0;}
+    void takeDamage(int damage, bool playerDidThis=false);
+
     //Instantly stops the ship, should only be used when a ship runs aground
     void instantStop () {currentThrust_=0.0; currentState_.velocity_=glm::vec2(0.0);}
 
-    Ship(const std::string &className,Side side,NATOSymbolManager::ShipType type, const std::vector<Gun>& guns, int health,double maxSpeed,double cruiseSpeed,double mass, double length, double height,glm::dvec2 position, double heading,bool transponder,double radarCoefficient,std::shared_ptr<const TexWrap> texture,std::shared_ptr<const TexWrap> cardTexture,std::shared_ptr<const TexWrap> targetTexture,std::shared_ptr<const TexWrap> velocityTexture,SDL_Renderer *renderer,TTF_Font* smallFont);
+    Ship(const std::string &className,Side side,NATOSymbolManager::ShipType type, const std::vector<Gun>& guns, int health,double maxSpeed,double cruiseSpeed,double mass, double length, double height,glm::dvec2 position, double heading,bool transponder,double radarCoefficient,int shells,int HAShM,int AShM, int SAM,std::shared_ptr<const TexWrap> texture,std::shared_ptr<const TexWrap> cardTexture,std::shared_ptr<const TexWrap> targetTexture,std::shared_ptr<const TexWrap> velocityTexture,SDL_Renderer *renderer,TTF_Font* smallFont);
 
     [[nodiscard]] NATOSymbolManager::ShipType getType() const {return type_;}
 
@@ -79,7 +101,8 @@ public:
 
     void render(SDL_Renderer *renderer, double mapTopLeftX, double mapTopLeftY, double scale) const;
 
-    void update(double dt);
+    void updateMotion(double dt);
+    void updateGuns(double dt,const std::shared_ptr<const SoundWrap>& artillerySound, double mapTopLeftX, double mapTopLeftY, double scale,int screenWidth, int screenHeight,std::list<Shell>& shells, std::mt19937& rng);
 
     void sailTowards(glm::dvec2 point);
     void setHeading(double newHeading) {
@@ -130,9 +153,34 @@ public:
             out = std::max(out,gun.airRange_);
         return out;
     }
+
+    void fireGunsAt(glm::dvec2 target,bool surface) {
+        hasGunTarget_=true;
+        currentGunTarget_=target;
+        targetSurface_=surface;
+    }
+
+    [[nodiscard]] bool sunkByPlayer() const {return sunkByPlayer_;}
+
+    [[nodiscard]] int getShells() const {return shells_;};
+    [[nodiscard]] int getHAShMs() const {return HAShMs_;}
+    [[nodiscard]] int getAShMs() const {return AShMs_;}
+    [[nodiscard]] int getSAMs() const {return SAMs_;}
 private:
+    //Ammunition
+    int shells_;
+    int HAShMs_;
+    int AShMs_;
+    int SAMs_;
+
+    //Relevant for neutral ships, did the player hit or sink them
+    bool hitByPlayer_=false, sunkByPlayer_=false;
 
     std::vector<Gun> guns_;
+    //Have we actively been given a target for our guns this frame
+    bool hasGunTarget_=false;
+    glm::dvec2 currentGunTarget_=glm::dvec2(0,0);
+    bool targetSurface_=true;
 
     bool transponderOn_=false;
     bool radarOn_=false;

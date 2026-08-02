@@ -8,16 +8,19 @@
   "mass": 6600000,
   "AShM": 16,
   "SAM": 36,
+  "shells": 2000,
   "guns": [
     {
-      "comment": "OTO melara 76 mm",
+      "name": "OTOMelara76mm",
       "location": 46,
       "restAngle": 0,
       "omega": 0.6108652381980153,
       "muzzleVelocity": 915,
       "seaRange": 16000,
       "airRange": 10000,
-      "reloadTime": 0.5
+      "reloadTime": 0.5,
+      "shellsPerBurst": 20,
+      "burstReloadTime": 5
     }
   ],
   "CIWS": 2,

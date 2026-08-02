@@ -29,7 +29,7 @@ void Particle::render(SDL_Renderer* renderer, int mapTopLeftX_, int mapTopLeftY_
     int texY = position_.y*scale+mapTopLeftY_;
 
     double thisScale =scale*scale_;
-    if (texX<0 || texY<0 || texX>screenWidth || texY>screenWidth || (thisScale*texture_->getHeight()<4)) {
+    if (texX<0 || texY<0 || texX>screenWidth || texY>screenWidth || (thisScale*texture_->getHeight()<1)) {
         return;
     }
 

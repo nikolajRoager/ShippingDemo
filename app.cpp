@@ -330,6 +330,9 @@ void App::run() {
                     else if (event.key.keysym.sym == SDLK_v) {
                         currentInput.vPressed=true;
                     }
+                    else if (event.key.keysym.sym == SDLK_g) {
+                        currentInput.gPressed=true;
+                    }
                     else if (event.key.keysym.sym == SDLK_HOME) {
                         currentInput.homePressed=true;
                     }
@@ -415,6 +418,9 @@ void App::run() {
                     }
                     else if (event.key.keysym.sym == SDLK_d) {
                         currentInput.dPressed=false;
+                    }
+                    else if (event.key.keysym.sym == SDLK_g) {
+                        currentInput.gPressed=false;
                     }
                     else if (event.key.keysym.sym == SDLK_HOME) {
                         currentInput.homePressed=false;
@@ -587,6 +593,7 @@ void App::run() {
         currentInput.prevAPressed=currentInput.aPressed;
         currentInput.prevSPressed=currentInput.sPressed;
         currentInput.prevDPressed=currentInput.dPressed;
+        currentInput.prevGPressed=currentInput.gPressed;
         currentInput.prevOnePressed=currentInput.onePressed;
         currentInput.prevTwoPressed=currentInput.twoPressed;
         currentInput.prevThreePressed=currentInput.threePressed;

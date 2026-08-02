@@ -97,7 +97,7 @@ By user 7778 on freesound.org: https://freesound.org/people/7778/sounds/202313/
 
 Copyright: Creative Commons 0
 
-gun.wav
+artillery.wav
 ----------------------------
 purpose: medium naval Cannon firing
 Author: User Isaac200000 on Freesound.org
